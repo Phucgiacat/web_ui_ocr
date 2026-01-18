@@ -73,9 +73,13 @@ def levenshtein_align_boxes(nom_list, qn_list, similar_df, trans_df):
     aligned_qn.reverse()
     return [aligned_nom, aligned_qn]
 
-def align(nom_dir, vi_dir, output_txt, k=2, name_book="book", reverse=False):
+def align(nom_dir, vi_dir, output_txt, k=1, name_book="book", reverse=False, mapping_path=None):
     similar = pd.read_excel(os.environ['NOM_SIMILARITY_DICTIONARY'])
     trans = pd.read_excel(os.environ['QN2NOM_DICTIONARY']).iloc[:, [0, 1]]
+    
+    # Xóa file output cũ nếu có
+    if os.path.exists(output_txt):
+        os.remove(output_txt)
     
     # Extract first name and last number from filename for sorting
     def extract_name_and_last_number(filename):
@@ -113,6 +117,96 @@ def align(nom_dir, vi_dir, output_txt, k=2, name_book="book", reverse=False):
     if json_count != txt_count:
         print(f"⚠️ Cảnh báo: Số lượng file không bằng nhau. JSON: {json_count}, TXT: {txt_count}")
     
+    # Xử lý theo k=1 hoặc k=2
+    if k == 2:
+        # K=2: Sử dụng mapping file
+        if not mapping_path:
+            raise ValueError("k=2 yêu cầu mapping_path (đường dẫn file mapping.xlsx)")
+        if not os.path.exists(mapping_path):
+            raise FileNotFoundError(f"Không tìm thấy file mapping: {mapping_path}")
+        
+        # Đọc mapping file
+        df = pd.read_excel(mapping_path)
+        df = df.iloc[57:].reset_index(drop=True)
+        
+        # Preprocess và align theo mapping
+        for lst_han, lst_qn in tqdm(zip(df["hannom"].to_list(), df["quocngu"].to_list()), desc="Preprocessing with mapping"):
+            preprocess_han = []
+            preprocess_qn = []
+            files_han = ast.literal_eval(lst_han)
+            
+            # Xử lý từng file Hán Nôm
+            for file_han in files_han:
+                nom_data = process_nom(os.path.join(nom_dir, file_han), 1)
+                preprocess_han.append({
+                    "file_name": file_han,
+                    "data": nom_data, 
+                    "number words": [len(box) for box in nom_data["text"]], 
+                    "text": "".join(nom_data["text"])
+                })
+            
+            # Xử lý từng file Quốc Ngữ
+            for file_qn in ast.literal_eval(lst_qn):
+                quoc_ngu_list = process_quoc_ngu(os.path.join(vi_dir, file_qn))
+                preprocess_qn.extend(quoc_ngu_list)
+            
+            # Align
+            flatten_nom = list("".join([page["text"] for page in preprocess_han]))
+            aligned_hn, aligned_qn = levenshtein_align_boxes(flatten_nom, preprocess_qn, similar, trans)
+            hn_remain, qn_remain = aligned_hn.copy(), aligned_qn.copy()
+            
+            # Xử lý từng page
+            for page_idx, page_content in enumerate(preprocess_han):
+                segments = []
+                for num in page_content["number words"]:
+                    if num == 0:
+                        segments.append(("", ""))
+                        continue
+                    count, i = 0, 0
+                    while i < len(hn_remain):
+                        if hn_remain[i] != "*":
+                            count += 1
+                        i += 1
+                        if count == num:
+                            break
+                    han_seg = hn_remain[:i]
+                    qn_seg = qn_remain[:i]
+                    segments.append((han_seg, qn_seg))
+                    hn_remain = hn_remain[i:]
+                    qn_remain = qn_remain[i:]
+                
+                # Xử lý phần còn lại: thêm vào segment cuối cùng nếu có
+                # Chỉ thêm vào page cuối cùng của row hiện tại
+                if page_idx == len(preprocess_han) - 1:
+                    if hn_remain or qn_remain:
+                        if segments:
+                            last_han, last_qn = segments[-1]
+                            segments[-1] = (last_han + hn_remain, last_qn + qn_remain)
+                        else:
+                            segments.append((hn_remain, qn_remain))
+                
+                # Ghi kết quả
+                nom_data = page_content["data"]
+                if len(nom_data['bbox']) != len(segments):
+                    print(f"⚠️ Bỏ qua {page_content['file_name']}: Số bbox ({len(nom_data['bbox'])}) ≠ segments ({len(segments)})")
+                    continue
+                
+                with open(output_txt, "a", encoding="utf-8") as f:
+                    for bbox, (han_seg, qn_seg) in zip(nom_data['bbox'], segments):
+                        if len(han_seg) != len(qn_seg):
+                            print(f"⚠️ Warning: Mismatch độ dài align tại file {page_content['file_name']}. Hán={len(han_seg)}, Việt={len(qn_seg)}")
+                            continue
+                        nom = ''.join(han_seg).strip()
+                        qn = ' '.join(qn_seg).strip()
+                        
+                        if not nom and not qn:
+                            continue
+                        
+                        f.write(f"{page_content['file_name']}\t{str(bbox)}\t{nom}\t{qn}\n")
+        
+        return  # K=2 đã xử lý xong
+    
+    # K=1: Xử lý bình thường (code cũ)
     # When NOT reverse (default): TXT is reversed (paired high-to-low)
     # When reverse=True: TXT is normal order (paired low-to-high)
     if not reverse:

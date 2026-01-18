@@ -23,6 +23,8 @@ class ConfigManager:
         # Default directories for OCR inputs
         self.vi_dir = os.getenv('VI_DIR', os.path.join(os.getcwd(), 'data', 'vi'))
         self.nom_dir = os.getenv('NOM_DIR', os.path.join(os.getcwd(), 'data', 'nom'))
+        self.ocr_json_nom = os.getenv('OCR_JSON_NOM', os.path.join(os.getcwd(), 'data', 'nom', 'ocr_json_nom'))
+        self.ocr_txt_qn = os.getenv('OCR_TXT_QN', os.path.join(os.getcwd(), 'data', 'vi', 'ocr_txt_qn'))
         
         # OCR Hán Nôm parameters
         self.ocr_id = int(os.getenv('OCR_ID', '1'))  # 1: thông thường dọc, 2: hành chính, 3: ngoại cảnh, 4: thông thường ngang
@@ -47,6 +49,8 @@ class ConfigManager:
                     self.epitaph = config.get('epitaph', self.epitaph)
                     self.vi_dir = config.get('vi_dir', self.vi_dir)
                     self.nom_dir = config.get('nom_dir', self.nom_dir)
+                    self.ocr_json_nom = config.get('ocr_json_nom', self.ocr_json_nom)
+                    self.ocr_txt_qn = config.get('ocr_txt_qn', self.ocr_txt_qn)
                     self.name_file_info = config.get('name_file_info', self.name_file_info)
         except Exception as e:
             print(f"Error loading config: {e}")

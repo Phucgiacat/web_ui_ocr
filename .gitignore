@@ -1,3 +1,10 @@
-# Environment variables
+# Bỏ qua môi trường ảo
+.venv/
+venv/
+
+# Bỏ qua file biến môi trường (quan trọng)
 .env
-.env.*
+
+# Bỏ qua các file rác của Python
+__pycache__/
+*.pyc

@@ -1,5 +1,14 @@
 {
     "file_name": "temp_TuNguyenYeuLy",
-    "vi_dir": "D:\\learning\\C.VAnh\\tool\\output/image_processed/Quoc Ngu",
-    "nom_dir": "D:\\learning\\C.VAnh\\tool\\output/image_processed/Han Nom"
+    "vi_dir": "D:\\learning\\C.VAnh\\tool\\output\\ocr\\Quoc_Ngu_ocr",
+    "nom_dir": "D:\\learning\\C.VAnh\\tool\\output\\ocr\\Han_Nom_ocr",
+    "vi_dir_processed": "",
+    "nom_dir_processed": "",
+    "ocr_json_nom": "D:\\learning\\C.VAnh\\tool\\output/ocr/Han_Nom_ocr",
+    "ocr_image_nom": "D:\\learning\\C.VAnh\\tool\\output/ocr/image_bbox",
+    "ocr_id": 1,
+    "lang_type": 2,
+    "epitaph": 1,
+    "output_txt": "D:\\learning\\C.VAnh\\tool\\output\\result.txt",
+    "result_xlsx": "D:\\learning\\C.VAnh\\tool\\output/result.xlsx"
 }

@@ -52,6 +52,8 @@ if DEMO_MODE:
             self.name_file_info = "before_handle_data.json"
             self.vi_dir = ""
             self.nom_dir = ""
+            self.ocr_json_nom = ""
+            self.ocr_txt_qn = ""
             self.num_crop_hn = 1
             self.num_crop_qn = 1
             self.ocr_id = 1
@@ -547,30 +549,85 @@ elif selected == "🔗 Align":
     - Truyền 2 thư mục: một chứa file JSON Hán Nôm, một chứa file TXT Quốc Ngữ
     - **Yêu cầu quan trọng**: Các file phải có cùng tên cơ sở (ví dụ: `image_001.json` và `image_001.txt`)
     - Nếu file TXT không tìm thấy, file đó sẽ bị bỏ qua (xem cảnh báo)
+    - Thông tin sẽ được lấy từ file `before_handle_data.json` nếu có
     """)
+    
+    # Đọc thông tin từ config
+    processor = OCRProcessor(config.output_folder, config.name_file_info)
+    info = None
+    try:
+        info = processor.read_file_info()
+        default_json_path = info.get('ocr_json_nom', config.ocr_json_nom or '')
+        default_txt_path = info.get('ocr_txt_qn', config.ocr_txt_qn or '')
+        default_align_param = info.get('align_param', 1)  # Mặc định k=1
+        default_reverse = info.get('align_reverse', False)
+        default_mapping_path = info.get('mapping_path', '')
+        file_name = info.get('file_name', '')
+    except:
+        default_json_path = config.ocr_json_nom or ''
+        default_txt_path = config.ocr_txt_qn or ''
+        default_align_param = 1  # Mặc định k=1
+        default_reverse = False
+        default_mapping_path = ''
+        file_name = ''
+    
+    # Hiển thị thông tin từ config
+    if file_name:
+        st.info(f"📖 **Tên file hiện tại:** {file_name}")
     
     col1, col2 = st.columns(2)
     with col1:
-        ocr_json_nom_align = st.text_input("File/Thư mục JSON Hán Nôm", value=config.nom_dir, help="Đường dẫn thư mục chứa file JSON từ nom OCR", key="ocr_json_nom_align")
+        ocr_json_nom_align = st.text_input(
+            "File/Thư mục JSON Hán Nôm", 
+            value=default_json_path, 
+            help="Đường dẫn thư mục chứa file JSON từ nom OCR (tự động lấy từ config nếu có)",
+            key="ocr_json_nom_align"
+        )
     with col2:
-        ocr_txt_qn_align = st.text_input("File/Thư mục TXT Quốc Ngữ", value=config.vi_dir, help="Đường dẫn thư mục chứa file TXT từ vi OCR (phải có cùng tên với JSON)", key="ocr_txt_qn_align")
+        ocr_txt_qn_align = st.text_input(
+            "File/Thư mục TXT Quốc Ngữ", 
+            value=default_txt_path, 
+            help="Đường dẫn thư mục chứa file TXT từ vi OCR (phải có cùng tên với JSON, tự động lấy từ config nếu có)",
+            key="ocr_txt_qn_align"
+        )
     
     st.markdown("---")
+    
+    # Chọn k=1 hoặc k=2
+    st.subheader("⚙️ Cấu hình Align")
     
     col1, col2 = st.columns([2, 1])
     
     with col1:
-        align_param = st.number_input(
-            "Tham số Align (threshold)",
-            min_value=1,
-            max_value=100,
-            value=30,
-            step=1,
-            help="Giá trị càng cao thì align càng chặt"
+        align_param = st.radio(
+            "Chọn phương thức Align (k)",
+            options=[1, 2],
+            index=0 if default_align_param == 1 else 1,
+            format_func=lambda x: f"k={x}: {'Không có file mapping' if x == 1 else 'Có file mapping (mapping.xlsx)'}",
+            help="k=1: Align thông thường không cần mapping file\nk=2: Align với file mapping.xlsx (tự động lấy từ config nếu có)"
         )
     
     with col2:
-        reverse_nom = st.checkbox("Đảo chiều Hán Nôm", value=False)
+        reverse_nom = st.checkbox("Đảo chiều Hán Nôm", value=default_reverse, help="Chỉ áp dụng khi k=1. Tự động lấy từ config nếu có")
+    
+    # Nếu k=2, hiển thị nút chọn file mapping
+    mapping_path_input = None
+    
+    if align_param == 2:
+        st.markdown("---")
+        st.info("📋 **k=2 yêu cầu file mapping.xlsx** - File này chứa thông tin mapping giữa file Hán Nôm và Quốc Ngữ")
+        
+        col1, col2 = st.columns([3, 1])
+        with col1:
+            mapping_path_input = st.text_input(
+                "Đường dẫn file mapping.xlsx",
+                value=default_mapping_path,
+                help="Chọn file mapping.xlsx hoặc nhập đường dẫn. File phải có cột 'hannom' và 'quocngu' chứa danh sách files",
+                key="mapping_path_input"
+            )
+        with col2:
+            # Nút chọn file (Streamlit file uploader không hỗ trợ chọn file từ hệ thống, nên dùng text input)
+            st.caption("Nhập đường dẫn tuyệt đối hoặc tương đối")
     
     if st.button("▶️ Bắt đầu căn chỉnh"):
         progress_bar = st.progress(0)
@@ -582,24 +639,35 @@ elif selected == "🔗 Align":
             status_text.write(f"📝 {message}")
         
         try:
-            # Call align with custom paths
-            processor = OCRProcessor(config.output_folder, config.name_file_info)
-            
-            # Use provided paths, fallback to config if empty
-            json_path = ocr_json_nom_align.strip() if ocr_json_nom_align.strip() else config.nom_dir
-            txt_path = ocr_txt_qn_align.strip() if ocr_txt_qn_align.strip() else config.vi_dir
+            # Lấy paths từ input, nếu rỗng thì lấy từ config
+            json_path = ocr_json_nom_align.strip() if ocr_json_nom_align.strip() else None
+            txt_path = ocr_txt_qn_align.strip() if ocr_txt_qn_align.strip() else None
             output_path = os.path.join(config.output_folder, 'result.txt')
+            
+            # Lấy mapping_path nếu k=2
+            mapping_path = None
+            if align_param == 2:
+                if not mapping_path_input or not mapping_path_input.strip():
+                    st.error("❌ Vui lòng nhập đường dẫn file mapping.xlsx khi chọn k=2")
+                    st.stop()
+                mapping_path = mapping_path_input.strip()
+                if not os.path.exists(mapping_path):
+                    st.error(f"❌ Không tìm thấy file mapping: {mapping_path}")
+                    st.stop()
             
             processor.align_text(
                 ocr_json_nom=json_path,
                 ocr_txt_qn=txt_path,
                 output_txt=output_path,
                 align_param=align_param,
-                reverse=reverse_nom,
+                name_book=file_name,  # Truyền file_name từ config
+                reverse=reverse_nom if align_param == 1 else False,  # reverse chỉ áp dụng khi k=1
+                mapping_path=mapping_path,
                 progress_callback=progress_callback
             )
             
             st.success("✅ Align thành công!")
+            st.info(f"📝 Output được lưu tại: `{output_path}`")
             st.session_state.current_status = config.get_status()
             
         except Exception as e:
@@ -658,16 +726,21 @@ elif selected == "⚙️ Chi tiết":
     # allow choosing input directories
     st.markdown("---")
     st.subheader("📁 Đường dẫn nguồn dữ liệu")
-    col1, col2 = st.columns(2)
+    col1, col2, col3 = st.columns(3)
     with col1:
         name_file_info = st.text_input("File thông tin (JSON)", value=getattr(config, 'name_file_info', 'before_handle_data.json'))
         config.name_file_info = name_file_info
         vi_dir = st.text_input("Thư mục ảnh Quốc Ngữ (vi_dir)", value=getattr(config, 'vi_dir', ''))
         config.vi_dir = vi_dir
     with col2:
+        ocr_json_nom = st.text_input("Thư mục JSON Hán Nôm (ocr_json_nom)", value=getattr(config, 'ocr_json_nom', ''))
+        config.ocr_json_nom = ocr_json_nom
         nom_dir = st.text_input("Thư mục ảnh Hán Nôm (nom_dir)", value=getattr(config, 'nom_dir', ''))
         config.nom_dir = nom_dir
         st.caption("Bạn có thể nhập đường dẫn tuyệt đối hoặc tương đối từ thư mục dự án.")
+    with col3:
+        ocr_txt_qn = st.text_input("Thư mục TXT Quốc Ngữ (ocr_txt_qn)", value=getattr(config, 'ocr_txt_qn', ''))
+        config.ocr_txt_qn = ocr_txt_qn
 
     st.markdown("---")
 

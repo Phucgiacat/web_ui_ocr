@@ -151,6 +151,9 @@ class DataHandler:
                 progress_callback("Đang cắt ảnh Hán Nôm...", 50, 100)
             self.crop_folder(info['nom_dir'], num_crop=num_crop_hn, progress_callback=progress_callback)
             
+            # Cập nhật thông tin vào file
+            info['vi_dir_processed'] = info['vi_dir']
+            info['nom_dir_processed'] = info['nom_dir']
             self.write_file_info(info)
             
             if progress_callback:
@@ -175,7 +178,7 @@ class DataHandler:
                 output_vi_dir = f"{self.output_folder}/image_processed/Quoc Ngu"
                 edge_detection = EdgeDetection(info["vi_dir"], output_vi_dir, path_module=vi_model)
                 edge_detection.process(crop=True, info="Processing Quoc Ngu: ")
-                info["vi_dir"] = output_vi_dir
+                info["vi_dir_processed"] = output_vi_dir
             
             if crop_hn:
                 if progress_callback:
@@ -184,7 +187,7 @@ class DataHandler:
                 output_nom_dir = f"{self.output_folder}/image_processed/Han Nom"
                 edge_detection = EdgeDetection(info["nom_dir"], output_nom_dir, path_module=nom_model)
                 edge_detection.process(crop=True, info="Processing Han Nom: ")
-                info["nom_dir"] = output_nom_dir
+                info["nom_dir_processed"] = output_nom_dir
             
             self.write_file_info(info)
             
