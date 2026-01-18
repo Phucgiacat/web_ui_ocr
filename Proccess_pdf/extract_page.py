@@ -10,13 +10,8 @@ from pypdf import PdfReader
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from threading import Lock
 import time
-from dotenv import load_dotenv
-from pathlib import Path
 
-
-load_dotenv(dotenv_path=Path(__file__).parent.parent / ".env", override=True)
-
-creadiential_path = os.environ['GOOGLE_APPLICATION_CREDENTIALS']
+creadiential_path = "D:/learning/lab NLP/Tool_news/AutoLabel_script/vi_ocr/vision_key.json"
 
 # Cache cho Vision Client (tái sử dụng connection)
 _vision_client_cache = None

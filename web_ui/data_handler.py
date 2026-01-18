@@ -15,16 +15,23 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 PARENT_MODULES_AVAILABLE = False
 try:
     from Proccess_pdf.extract_page import ExtractPages
+    from Proccess_pdf.edge_detection import EdgeDetection
     PARENT_MODULES_AVAILABLE = True
 except ImportError as e:
     # Check if it's a missing google.cloud.vision dependency
     if "google.cloud" in str(e) or "vision" in str(e):
         print(f"⚠️ Warning: google-cloud-vision not installed. Install with: pip install google-cloud-vision")
         PARENT_MODULES_AVAILABLE = False
+    elif "ultralytics" in str(e):
+        print(f"⚠️ Warning: ultralytics not installed. Install with: pip install ultralytics")
+        PARENT_MODULES_AVAILABLE = False
     else:
         print(f"⚠️ Warning: Could not import Proccess_pdf: {e}")
+        import traceback
+        traceback.print_exc()
         PARENT_MODULES_AVAILABLE = False
     ExtractPages = None
+    EdgeDetection = None
 
 class DataHandler:
     """Xử lý dữ liệu từ PDF đến ảnh"""
@@ -156,7 +163,7 @@ class DataHandler:
     def edge_detection_crop(self, vi_model: str, nom_model: str, crop_qn: bool, crop_hn: bool, progress_callback=None) -> bool:
         """Áp dụng edge detection để cắt ảnh"""
         try:
-            if not PARENT_MODULES_AVAILABLE:
+            if not PARENT_MODULES_AVAILABLE or EdgeDetection is None:
                 raise ImportError("Parent modules (Proccess_pdf) not available. Make sure to run from ocr_corrector root directory.")
             
             info = self.read_file_info()

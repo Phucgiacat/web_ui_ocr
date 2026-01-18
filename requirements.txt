@@ -32,14 +32,15 @@ google-cloud-vision>=3.4.0
 langdetect>=1.0.9
 Levenshtein>=0.21.0
 
+# Object Detection & Model Inference
+ultralytics>=8.0.0  # YOLOv8 for edge detection
+torch>=2.0.0
+torchvision>=0.15.0
+
 # Utilities
 tqdm>=4.65.0
 requests>=2.30.0
 watchdog>=3.0.0
-
-# ML/Deep Learning (if needed for model inference)
-torch>=2.0.0
-torchvision>=0.15.0
 
 # Additional utilities
 python-multipart>=0.0.6
