@@ -3,6 +3,7 @@ import pandas as pd
 import os
 import sys
 import json
+import shutil
 
 # Add parent directory to path to import parent modules
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -12,6 +13,7 @@ PARENT_MODULES_AVAILABLE = False
 vi_ocr = None
 nom_ocr = None
 align = None
+align_han = None
 convert_txt_to_ecel = None
 marking = None
 
@@ -22,7 +24,7 @@ except (ImportError, Exception) as e:
     pass
 
 try:
-    from nom_ocr.nom_ocr import nom_ocr as nom_ocr_func
+    from nom_ocr.nom_ocr import nom_ocr as nom_ocr_func, count_processed_images, get_next_unprocessed_file
     nom_ocr = nom_ocr_func
 except (ImportError, Exception) as e:
     pass
@@ -42,6 +44,12 @@ except (ImportError, Exception) as e:
     align = None
     convert_txt_to_ecel = None
     marking = None
+
+try:
+    from align_han.align_han import align_han
+except (ImportError, Exception) as e:
+    print(f"⚠️ Warning: Could not import align_han module: {e}")
+    align_han = None
 
 class OCRProcessor:
     """Xử lý OCR cho Quốc Ngữ và Hán Nôm"""
@@ -132,7 +140,7 @@ class OCRProcessor:
             info['lang_type'] = self.lang_type
             info['epitaph'] = self.epitaph
             
-            process_images_in_directory(info['nom_dir'], "resized_images.txt")
+            # process_images_in_directory(info['nom_dir'], "resized_images.txt")
             # Call nom_ocr with parameters from config
             nom_ocr(info['nom_dir'], info['ocr_json_nom'], info['ocr_image_nom'], start=0, ocr_id=self.ocr_id, lang_type=self.lang_type, epitaph=self.epitaph, progress_callback=progress_callback)
             
@@ -307,6 +315,72 @@ class OCRProcessor:
         except Exception as e:
             raise Exception(f"Lỗi align: {str(e)}")
     
+    def align_text_same_language(self, left_json_dir: str = None, right_txt_dir: str = None, output_txt: str = None, align_param: int = 1, name_book: str = "", reverse: bool = False, mapping_path: str = None, progress_callback=None) -> bool:
+        """Align same-language inputs (no dictionaries), requires left as JSON (for bbox) and right as TXT.
+        Args and behavior mirror align_text, but uses align_han implementation.
+        """
+        try:
+            if not PARENT_MODULES_AVAILABLE or align_han is None:
+                raise ImportError("align_han not available. Make sure to run from ocr_corrector root directory.")
+
+            info = self.read_file_info()
+
+            if not left_json_dir:
+                left_json_dir = info.get('ocr_json_nom', '')
+            if not right_txt_dir:
+                right_txt_dir = info.get('ocr_txt_qn', '')
+
+            if not left_json_dir:
+                raise ValueError("Chưa set đường dẫn JSON (left_json_dir). Vui lòng chọn folder JSON hoặc chạy OCR trước.")
+            if not right_txt_dir:
+                raise ValueError("Chưa set đường dẫn TXT (right_txt_dir). Vui lòng chọn folder TXT hoặc chạy OCR trước.")
+
+            if not os.path.exists(left_json_dir):
+                raise FileNotFoundError(f"Không tìm thấy thư mục JSON: {left_json_dir}")
+            if not os.path.exists(right_txt_dir):
+                raise FileNotFoundError(f"Không tìm thấy thư mục TXT: {right_txt_dir}")
+
+            if not name_book:
+                name_book = info.get('file_name', 'book')
+
+            if not output_txt:
+                output_txt = f"{self.output_folder}/result_han.xlsx"
+
+            if align_param not in [1, 2]:
+                raise ValueError("align_param (k) chỉ chấp nhận giá trị 1 hoặc 2. 1=không có mapping, 2=có mapping file")
+
+            if align_param == 2:
+                if not mapping_path:
+                    raise ValueError("k=2 yêu cầu mapping_path (đường dẫn file mapping.xlsx)")
+                if not os.path.exists(mapping_path):
+                    raise FileNotFoundError(f"Không tìm thấy file mapping: {mapping_path}")
+
+            info['ocr_json_nom'] = left_json_dir
+            info['ocr_txt_qn'] = right_txt_dir
+            info['output_txt'] = output_txt
+            info['align_param'] = align_param
+            info['align_reverse'] = reverse
+            if mapping_path:
+                info['mapping_path'] = mapping_path
+
+            os.makedirs(os.path.dirname(output_txt) or '.', exist_ok=True)
+            if os.path.exists(output_txt):
+                os.remove(output_txt)
+
+            if progress_callback:
+                progress_callback("Đang align (cùng ngôn ngữ)...", 0, 100)
+
+            align_han(left_json_dir, right_txt_dir, output_txt, k=align_param, name_book=name_book, reverse=reverse, mapping_path=mapping_path)
+
+            self.write_file_info(info)
+
+            if progress_callback:
+                progress_callback("Align (cùng ngôn ngữ) hoàn thành!", 100, 100)
+
+            return True
+        except Exception as e:
+            raise Exception(f"Lỗi align (cùng ngôn ngữ): {str(e)}")
+    
     def correct_text(self, debug: bool = False, progress_callback=None) -> bool:
         """Sửa lỗi và tạo Excel"""
         try:
@@ -361,3 +435,153 @@ class OCRProcessor:
         """Ghi thông tin vào file"""
         with open(self.name_file_info, 'w', encoding='utf-8') as f:
             json.dump(info, f, ensure_ascii=False, indent=4)
+    
+    def get_ocr_progress(self) -> Dict[str, Any]:
+        """Lấy thông tin tiến độ OCR Hán Nôm
+        
+        Returns:
+            Dict chứa:
+            - processed_count: Số file .json đã OCR
+            - total_count: Tổng số ảnh trong folder nom_dir
+            - progress_percent: Phần trăm hoàn thành (0-100)
+            - unprocessed_file: File ảnh đầu tiên chưa OCR (nếu có)
+        """
+        try:
+            info = self.read_file_info()
+            nom_dir = info.get('nom_dir', '')
+            ocr_json_nom = info.get('ocr_json_nom', '')
+            
+            if not nom_dir or not os.path.exists(nom_dir):
+                return {
+                    'processed_count': 0,
+                    'total_count': 0,
+                    'progress_percent': 0,
+                    'unprocessed_file': None,
+                    'status': 'error: nom_dir not found'
+                }
+            
+            # Đếm file đã OCR
+            processed_count = count_processed_images(ocr_json_nom) if ocr_json_nom else 0
+            
+            # Đếm tổng file ảnh
+            total_count = len([f for f in os.listdir(nom_dir) if os.path.isfile(os.path.join(nom_dir, f))])
+            
+            # Tính phần trăm
+            progress_percent = int((processed_count / total_count * 100)) if total_count > 0 else 0
+            
+            # Lấy file chưa OCR
+            unprocessed_file = None
+            if ocr_json_nom and os.path.exists(ocr_json_nom):
+                unprocessed_file, _ = get_next_unprocessed_file(nom_dir, ocr_json_nom)
+            
+            return {
+                'processed_count': processed_count,
+                'total_count': total_count,
+                'progress_percent': progress_percent,
+                'unprocessed_file': unprocessed_file,
+                'status': 'success'
+            }
+        except Exception as e:
+            return {
+                'processed_count': 0,
+                'total_count': 0,
+                'progress_percent': 0,
+                'unprocessed_file': None,
+                'status': f'error: {str(e)}'
+            }
+    
+    def extract_processed_images(self, output_base_folder: str = None, progress_callback=None) -> bool:
+        """Tách ảnh đã OCR thành 2 thư mục riêng: image và ocr
+        
+        Cấu trúc output:
+        - output_base_folder/
+            - image/          (chứa ảnh đã OCR)
+            - ocr/            (chứa file .json tương ứng)
+        
+        Args:
+            output_base_folder: Thư mục output (mặc định: output_folder/extracted)
+            progress_callback: Callback để báo cáo tiến độ
+        
+        Returns:
+            True nếu thành công
+        """
+        try:
+            info = self.read_file_info()
+            
+            # Lấy paths
+            nom_dir = info.get('nom_dir', '')
+            ocr_json_nom = info.get('ocr_json_nom', '')
+            ocr_image_nom = info.get('ocr_image_nom', '')
+            
+            if not nom_dir:
+                raise ValueError("Chưa set nom_dir. Cần chạy extract PDF trước.")
+            if not ocr_json_nom:
+                raise ValueError("Chưa set ocr_json_nom. Cần chạy OCR Hán Nôm trước.")
+            if not ocr_image_nom:
+                raise ValueError("Chưa set ocr_image_nom. Cần chạy OCR Hán Nôm trước.")
+            
+            if not os.path.exists(ocr_json_nom):
+                raise FileNotFoundError(f"Không tìm thấy thư mục JSON: {ocr_json_nom}")
+            if not os.path.exists(ocr_image_nom):
+                raise FileNotFoundError(f"Không tìm thấy thư mục ảnh OCR: {ocr_image_nom}")
+            if not os.path.exists(nom_dir):
+                raise FileNotFoundError(f"Không tìm thấy thư mục ảnh gốc: {nom_dir}")
+            
+            # Tạo output folder
+            if not output_base_folder:
+                output_base_folder = f"{self.output_folder}/extracted"
+            
+            extracted_image_dir = os.path.join(output_base_folder, "image")
+            extracted_json_dir = os.path.join(output_base_folder, "ocr")
+            
+            os.makedirs(extracted_image_dir, exist_ok=True)
+            os.makedirs(extracted_json_dir, exist_ok=True)
+            
+            # Lấy danh sách file JSON đã OCR
+            json_files = [f for f in os.listdir(ocr_json_nom) if f.endswith('.json')]
+            total = len(json_files)
+            
+            if total == 0:
+                raise ValueError("Không có file JSON nào. Hãy chạy OCR Hán Nôm trước.")
+            
+            extracted_count = 0
+            
+            for idx, json_file in enumerate(json_files):
+                # Lấy tên file gốc (loại bỏ .json)
+                base_name = json_file.replace('.json', '')
+                
+                # Tìm file ảnh tương ứng (có thể là .jpg, .jpeg, .png)
+                source_image_path = None
+                for ext in ['.jpg', '.jpeg', '.png']:
+                    candidate = os.path.join(nom_dir, base_name + ext)
+                    if os.path.exists(candidate):
+                        source_image_path = candidate
+                        break
+                
+                # Copy ảnh gốc nếu tìm được
+                if source_image_path:
+                    dest_image_path = os.path.join(extracted_image_dir, os.path.basename(source_image_path))
+                    if not os.path.exists(dest_image_path):
+                        shutil.copy2(source_image_path, dest_image_path)
+                    extracted_count += 1
+                
+                # Copy file JSON OCR
+                source_json_path = os.path.join(ocr_json_nom, json_file)
+                dest_json_path = os.path.join(extracted_json_dir, json_file)
+                if not os.path.exists(dest_json_path):
+                    shutil.copy2(source_json_path, dest_json_path)
+                
+                if progress_callback:
+                    progress_callback(f"Đang tách file: {idx + 1}/{total}", idx + 1, total)
+            
+            # Lưu thông tin extracted paths vào config
+            info['extracted_image_dir'] = extracted_image_dir
+            info['extracted_json_dir'] = extracted_json_dir
+            self.write_file_info(info)
+            
+            if progress_callback:
+                progress_callback(f"Tách file hoàn thành! {extracted_count}/{total} ảnh", total, total)
+            
+            return True
+        except Exception as e:
+            raise Exception(f"Lỗi tách file: {str(e)}")

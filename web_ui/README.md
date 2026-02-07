@@ -18,6 +18,21 @@ Công cụ web hiện đại để chạy các phase của OCR Corrector cho tà
 
 ## 🚀 Cài đặt
 
+### Chạy nhanh từ thư mục gốc (Khuyến nghị)
+
+```bash
+# Tạo file cấu hình môi trường
+copy .env.example .env
+
+# Cài đặt dependencies và tạo thư mục cần thiết
+python web_ui/setup.py
+
+# Chạy Web UI
+python web_ui/run.py
+```
+
+> Lưu ý: File `.env` không được đưa lên GitHub. Hãy chỉnh sửa `.env` theo môi trường của bạn.
+
 ### 1. Cài đặt thư viện
 
 ```bash

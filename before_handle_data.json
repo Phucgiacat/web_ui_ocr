@@ -1,14 +1,20 @@
 {
-    "file_name": "temp_TuNguyenYeuLy",
+    "file_name": "VBTL",
     "vi_dir": "D:\\learning\\C.VAnh\\tool\\output\\ocr\\Quoc_Ngu_ocr",
-    "nom_dir": "D:\\learning\\C.VAnh\\tool\\output\\ocr\\Han_Nom_ocr",
+    "nom_dir": "D:\\learning\\C.VAnh\\Data\\VBTL\\image\\BIA_TIENLANG",
     "vi_dir_processed": "",
     "nom_dir_processed": "",
-    "ocr_json_nom": "D:\\learning\\C.VAnh\\tool\\output/ocr/Han_Nom_ocr",
-    "ocr_image_nom": "D:\\learning\\C.VAnh\\tool\\output/ocr/image_bbox",
+    "ocr_json_nom": "D:\\learning\\C.VAnh\\Data\\VBTL/ocr/Han_Nom_ocr",
+    "ocr_image_nom": "D:\\learning\\C.VAnh\\Data\\VBTL/ocr/image_bbox",
     "ocr_id": 1,
-    "lang_type": 2,
+    "lang_type": 1,
     "epitaph": 1,
-    "output_txt": "D:\\learning\\C.VAnh\\tool\\output\\result.txt",
-    "result_xlsx": "D:\\learning\\C.VAnh\\tool\\output/result.xlsx"
+    "output_txt": "D:\\learning\\C.VAnh\\Data\\VBTL\\result_han.xlsx",
+    "result_xlsx": "D:\\learning\\C.VAnh\\tool\\output/result.xlsx",
+    "ocr_txt_qn": "D:\\learning\\C.VAnh\\Data\\VBTL\\ocr\\HanNom",
+    "extracted_image_dir": "D:\\learning\\C.VAnh\\Data\\VBTL/extracted\\image",
+    "extracted_json_dir": "D:\\learning\\C.VAnh\\Data\\VBTL/extracted\\ocr",
+    "align_param": 2,
+    "align_reverse": false,
+    "mapping_path": "D:\\learning\\C.VAnh\\Data\\VBTL\\mapping.xlsx"
 }

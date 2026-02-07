@@ -33,8 +33,9 @@ ENV/
 *~
 .DS_Store
 
-# Streamlit
-.streamlit/
+# Streamlit (keep config.toml)
+.streamlit/*
+!.streamlit/config.toml
 .streamlit_cache/
 
 # Logs
@@ -44,9 +45,6 @@ logs/
 # Output
 output/
 temp/
-*.xlsx
-*.txt
-*.json
 
 # Environment
 .env

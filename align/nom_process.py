@@ -76,8 +76,28 @@ def to_cols(bbox, k):
 def read_json(file_name):
     with open(file=file_name, mode='r', encoding='utf-8') as file:
         data = json.load(file)
-
-    return data['data']['details']['details']
+    
+    # Try different JSON structures
+    try:
+        # New format with details
+        if 'data' in data and 'details' in data['data'] and 'details' in data['data']['details']:
+            return data['data']['details']['details']
+        # Alternative format with result_bbox
+        elif 'data' in data and 'result_bbox' in data['data']:
+            return data['data']['result_bbox']
+        # Direct details format
+        elif 'details' in data:
+            return data['details']
+        # Direct result_bbox format
+        elif 'result_bbox' in data:
+            return data['result_bbox']
+        # Fallback - assume data is already the list
+        else:
+            print(f"⚠️ Warning: Unexpected JSON structure in {file_name}, using data directly")
+            return data if isinstance(data, list) else []
+    except Exception as e:
+        print(f"❌ Error reading JSON structure from {file_name}: {e}")
+        return []
 
 
 def process_nom(file_path, k):

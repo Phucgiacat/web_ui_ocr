@@ -129,25 +129,102 @@ def align(nom_dir, vi_dir, output_txt, k=1, name_book="book", reverse=False, map
         df = pd.read_excel(mapping_path)
         df = df.iloc[57:].reset_index(drop=True)
         
+        # Helper function để flexible kiểm tra file tồn tại
+        def find_file_flexible(dir_path, target_filename):
+            """
+            Tìm file flexible - support case insensitive và mismatch extension
+            
+            Args:
+                dir_path: Thư mục cần tìm
+                target_filename: Tên file cần tìm
+            
+            Returns:
+                Full path nếu tìm thấy, None nếu không
+            """
+            if not os.path.isdir(dir_path):
+                return None
+            
+            # Thử kiểm tra trực tiếp trước
+            full_path = os.path.join(dir_path, target_filename)
+            if os.path.exists(full_path):
+                return full_path
+            
+            # Lấy base name (không có extension)
+            target_base = os.path.splitext(target_filename)[0]
+            target_ext = os.path.splitext(target_filename)[1].lower()
+            
+            # Tìm file với base name giống nhau (ignore case, ignore extension)
+            for item in os.listdir(dir_path):
+                item_path = os.path.join(dir_path, item)
+                if not os.path.isfile(item_path):
+                    continue
+                
+                item_base = os.path.splitext(item)[0]
+                item_ext = os.path.splitext(item)[1].lower()
+                
+                # Match nếu base name giống (không case sensitive)
+                if item_base.lower() == target_base.lower():
+                    # Nếu có extension, thử match extension
+                    if target_ext:
+                        # Flexible extension matching (e.g., .json có thể là .txt, etc)
+                        if item_ext in ['.json', '.txt', '.jpg', '.png']:
+                            return item_path
+                    else:
+                        return item_path
+            
+            return None
+        
         # Preprocess và align theo mapping
         for lst_han, lst_qn in tqdm(zip(df["hannom"].to_list(), df["quocngu"].to_list()), desc="Preprocessing with mapping"):
             preprocess_han = []
             preprocess_qn = []
             files_han = ast.literal_eval(lst_han)
+            files_qn = ast.literal_eval(lst_qn)
+
+            # Bỏ qua mapping nếu bất kỳ file JSON/TXT nào không tồn tại
+            # Sử dụng flexible checking
+            actual_han_files = []
+            actual_qn_files = []
+            missing_han_list = []
+            missing_qn_list = []
+            
+            for f in files_han:
+                actual_file = find_file_flexible(nom_dir, f)
+                if actual_file:
+                    actual_han_files.append(actual_file)
+                else:
+                    missing_han_list.append(f)
+            
+            for f in files_qn:
+                actual_file = find_file_flexible(vi_dir, f)
+                if actual_file:
+                    actual_qn_files.append(actual_file)
+                else:
+                    missing_qn_list.append(f)
+            
+            if missing_han_list or missing_qn_list:
+                print(f"⚠️ Bỏ qua mapping: thiếu file")
+                if missing_han_list:
+                    print(f"   Hán Nôm: {missing_han_list}")
+                if missing_qn_list:
+                    print(f"   Quốc Ngữ: {missing_qn_list}")
+                print(f"   Tìm được: Hán={len(actual_han_files)}, QN={len(actual_qn_files)}")
+                continue
             
             # Xử lý từng file Hán Nôm
-            for file_han in files_han:
-                nom_data = process_nom(os.path.join(nom_dir, file_han), 1)
+            for file_path in actual_han_files:
+                nom_data = process_nom(file_path, 1)
+                file_name = os.path.basename(file_path)
                 preprocess_han.append({
-                    "file_name": file_han,
+                    "file_name": file_name,
                     "data": nom_data, 
                     "number words": [len(box) for box in nom_data["text"]], 
                     "text": "".join(nom_data["text"])
                 })
             
             # Xử lý từng file Quốc Ngữ
-            for file_qn in ast.literal_eval(lst_qn):
-                quoc_ngu_list = process_quoc_ngu(os.path.join(vi_dir, file_qn))
+            for file_path in actual_qn_files:
+                quoc_ngu_list = process_quoc_ngu(file_path)
                 preprocess_qn.extend(quoc_ngu_list)
             
             # Align

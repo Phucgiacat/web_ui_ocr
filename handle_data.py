@@ -1,112 +1,292 @@
-import os
-import cv2
-from tqdm import tqdm
-import shutil
-from dotenv import load_dotenv
-from Proccess_pdf.extract_page import ExtractPages
+"""
+Data Handler Module - Xử lý dữ liệu PDF, crop ảnh và quản lý file info
+
+Module này hỗ trợ:
+- Trích xuất trang từ PDF
+- Crop và xử lý ảnh
+- Quản lý thông tin file JSON
+- Edge detection và image preprocessing
+"""
 import argparse
-from Proccess_pdf.edge_detection import EdgeDetection
 import json
+import logging
+import os
 import re
+import shutil
+from pathlib import Path
+from typing import Dict, Any, Optional, Union
+
+import cv2
+import numpy as np
+from dotenv import load_dotenv
 from tqdm import tqdm
+
+from Proccess_pdf.edge_detection import EdgeDetection
+from Proccess_pdf.extract_page import ExtractPages
+
 load_dotenv('.env')
 
+# Setup logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
-def crop_image_func(image_path: str, num_crop: int) -> dict:
+# Constants
+OUTPUT_FOLDER = os.environ.get('OUTPUT_FOLDER', './output')
+NAME_FILE_INFO = os.environ.get('NAME_FILE_INFO', 'before_handle_data.json')
+VI_MODEL = os.environ.get('VI_MODEL', '')
+NOM_MODEL = os.environ.get('NOM_MODEL', '')
+NUM_CROP_HN = int(os.environ.get('NUM_CROP_HN', 1))
+NUM_CROP_QN = int(os.environ.get('NUM_CROP_QN', 1))
+TYPE_QN = int(os.environ.get('TYPE_QN', 0))
+
+
+def crop_image_func(
+    image_path: str,
+    num_crop: int
+) -> Dict[int, np.ndarray]:
+    """
+    Crop một ảnh thành nhiều phần theo chiều ngang
+    
+    Args:
+        image_path: Đường dẫn đến ảnh
+        num_crop: Số phần muốn chia (1 = không crop)
+    
+    Returns:
+        Dictionary {index: cropped_image}
+    
+    Raises:
+        ValueError: Nếu không đọc được ảnh
+    """
     image = cv2.imread(image_path)
     if image is None:
-        raise ValueError(f"Cannot read image: {image_path}")
-
+        raise ValueError(f"Không thể đọc ảnh: {image_path}")
+    
     height, width, _ = image.shape
-
+    
+    # Nếu không cần crop, xóa ảnh gốc và trả về ảnh nguyên bản
     if num_crop <= 1:
         os.remove(image_path)
         return {1: image}
-
-    crop_image = {}
+    
+    crop_images = {}
     step = width // num_crop
     start = 0
-
+    
     for i in range(1, num_crop + 1):
         end = width if i == num_crop else start + step
-        crop_image[i] = image[:, start:end]
+        crop_images[i] = image[:, start:end]
         start += step
-
+    
     os.remove(image_path)
-    return crop_image
+    return crop_images
 
-def crop_folder(dir_input, info="processing: ", num_crop=1):
+
+
+def crop_folder(
+    dir_input: str,
+    info: str = "Processing: ",
+    num_crop: int = 1
+) -> None:
+    """
+    Crop tất cả các ảnh trong một thư mục
+    
+    Args:
+        dir_input: Đường dẫn thư mục chứa ảnh
+        info: Thông báo hiển thị trên progress bar
+        num_crop: Số phần muốn chia mỗi ảnh
+    """
     os.makedirs(dir_input, exist_ok=True)
-    images = [f for f in os.listdir(dir_input) if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
+    
+    # Lấy danh sách các file ảnh
+    image_extensions = ('.png', '.jpg', '.jpeg', '.bmp', '.tiff')
+    images = [
+        f for f in os.listdir(dir_input)
+        if f.lower().endswith(image_extensions)
+    ]
+    
+    if not images:
+        logger.warning(f"Không tìm thấy ảnh nào trong {dir_input}")
+        return
+    
+    logger.info(f"Tìm thấy {len(images)} ảnh trong {dir_input}")
+    
     index = 0
     for image in tqdm(images, desc=info):
-        image_path = os.path.join(dir_input, image)
-        crop_image = crop_image_func(image_path, num_crop)
-        filename, ext = os.path.splitext(image)
-        for key in sorted(crop_image.keys()):
-            index += 1
-            output_file = os.path.join(dir_input, f"{filename}_{str(index).zfill(3)}{ext}")
-            cv2.imwrite(output_file, crop_image[key])
+        try:
+            image_path = os.path.join(dir_input, image)
+            cropped_images = crop_image_func(image_path, num_crop)
+            
+            filename, ext = os.path.splitext(image)
+            
+            # Lưu các ảnh đã crop
+            for key in sorted(cropped_images.keys()):
+                index += 1
+                output_file = os.path.join(
+                    dir_input,
+                    f"{filename}_{str(index).zfill(3)}{ext}"
+                )
+                cv2.imwrite(output_file, cropped_images[key])
+        except Exception as e:
+            logger.error(f"Lỗi khi xử lý {image}: {e}")
+            continue
 
-def replace_number_in_filename(filename: str, number: int, type = " ") -> str:
+
+
+def replace_number_in_filename(
+    filename: str,
+    number: int,
+    file_type: str = " "
+) -> str:
     """
-    Nếu cropped=True: thay thế số cũ (định dạng _xxx.) bằng số mới.
-    Nếu cropped=False: thêm _xxx vào ngay trước phần đuôi file.
+    Thay thế số trong tên file theo format chuẩn
+    
+    Args:
+        filename: Tên file gốc
+        number: Số mới
+        file_type: Loại file (vi/nom)
+    
+    Returns:
+        Tên file đã được thay thế
+    
+    Example:
+        replace_number_in_filename("file_001.jpg", 5, "vi") -> "file_vi_05.jpg"
     """
     padding = f"{number:02d}"
-
     pattern = r'_(\d+)\.'
-    new_filename = re.sub(pattern, f'_{type}_{padding}.', filename)
-
+    new_filename = re.sub(pattern, f'_{file_type}_{padding}.', filename)
     return new_filename
 
-def process_file(file_path):
-    if os.path.exists(os.environ['OUTPUT_FOLDER']):
-        shutil.rmtree(os.environ['OUTPUT_FOLDER'])
-    save_info = "before_handle_data.json"
-    file_name = os.path.basename(file_path)
-    file_name = os.path.splitext(file_name)[0]
-    info = {"file_name": file_name}
+
+
+def process_file(file_path: str) -> None:
+    """
+    Xử lý file PDF: trích xuất trang và crop ảnh
     
-    if os.path.exists(save_info):
-        os.remove(save_info)
-
-    os.makedirs(os.environ['OUTPUT_FOLDER'], exist_ok=True)
-    extractor = ExtractPages(file_path, os.environ['OUTPUT_FOLDER'])
-    extractor.extract(logs=False, return_dict= False)
-
-    vi_dir = f"{os.environ['OUTPUT_FOLDER']}/image/Quoc Ngu"
-    nom_dir = f"{os.environ['OUTPUT_FOLDER']}/image/Han Nom"
+    Args:
+        file_path: Đường dẫn đến file PDF
+    
+    Raises:
+        FileNotFoundError: Nếu file không tồn tại
+        Exception: Lỗi khác trong quá trình xử lý
+    """
+    if not os.path.exists(file_path):
+        raise FileNotFoundError(f"Không tìm thấy file: {file_path}")
+    
+    logger.info(f"Bắt đầu xử lý file: {file_path}")
+    
+    # Xóa thư mục output cũ nếu có
+    if os.path.exists(OUTPUT_FOLDER):
+        logger.info(f"Xóa thư mục output cũ: {OUTPUT_FOLDER}")
+        shutil.rmtree(OUTPUT_FOLDER)
+    
+    # Lấy tên file
+    file_name = Path(file_path).stem
+    info: Dict[str, Any] = {"file_name": file_name}
+    
+    # Xóa file info cũ nếu có
+    if os.path.exists(NAME_FILE_INFO):
+        os.remove(NAME_FILE_INFO)
+    
+    # Tạo thư mục output
+    os.makedirs(OUTPUT_FOLDER, exist_ok=True)
+    
+    # Trích xuất các trang từ PDF
+    logger.info("Trích xuất các trang từ PDF...")
+    extractor = ExtractPages(file_path, OUTPUT_FOLDER)
+    extractor.extract(logs=False, return_dict=False)
+    
+    # Đường dẫn thư mục Quốc Ngữ và Hán Nôm
+    vi_dir = f"{OUTPUT_FOLDER}/image/Quoc Ngu"
+    nom_dir = f"{OUTPUT_FOLDER}/image/Han Nom"
     info['vi_dir'] = vi_dir
     info['nom_dir'] = nom_dir
-
-    try:
-        num_nom = int(os.environ['NUM_CROP_HN'])
-        num_qn  = int(os.environ['NUM_CROP_QN'])
-        print(f"Số ảnh crop nom: {num_nom}")
-        print(f"Số ảnh crop qn: {num_qn}")
-        crop_folder(vi_dir, info="processing Quoc Ngu: ", num_crop=num_nom)
-        crop_folder(nom_dir, info= "proccessing Nom: ", num_crop=num_qn)
-    except Exception as error:
-        raise error
     
-    with open(save_info, "w", encoding="utf-8") as file:
+    # Crop ảnh
+    try:
+        logger.info(f"Số phần crop Quốc Ngữ: {NUM_CROP_QN}")
+        logger.info(f"Số phần crop Hán Nôm: {NUM_CROP_HN}")
+        
+        crop_folder(vi_dir, info="Crop Quốc Ngữ: ", num_crop=NUM_CROP_QN)
+        crop_folder(nom_dir, info="Crop Hán Nôm: ", num_crop=NUM_CROP_HN)
+    except Exception as error:
+        logger.error(f"Lỗi khi crop ảnh: {error}")
+        raise
+    
+    # Lưu thông tin vào file JSON
+    with open(NAME_FILE_INFO, "w", encoding="utf-8") as file:
         json.dump(info, file, ensure_ascii=False, indent=4)
-    print("Success !!!")
+    
+    logger.info(f"✓ Xử lý thành công! Kết quả lưu tại {OUTPUT_FOLDER}")
 
-def str2bool(v: str):
-    if v.isdigit():
-        return int(v)
-    return v.lower() in ('true', '1', 'yes', 'y')
 
-def read_file_info() -> json:
-    with open(os.environ['NAME_FILE_INFO'], "r", encoding="utf-8") as file:
+def str2bool(v: Union[str, int, bool]) -> Union[bool, int]:
+    """
+    Chuyển đổi string thành boolean hoặc int
+    
+    Args:
+        v: Giá trị cần chuyển đổi
+    
+    Returns:
+        Boolean hoặc int tương ứng
+    """
+    if isinstance(v, bool):
+        return v
+    if isinstance(v, int):
+        return v
+    if isinstance(v, str):
+        if v.isdigit():
+            return int(v)
+        return v.lower() in ('true', '1', 'yes', 'y')
+    return False
+
+
+def read_file_info(file_path: Optional[str] = None) -> Dict[str, Any]:
+    """
+    Đọc thông tin từ file JSON
+    
+    Args:
+        file_path: Đường dẫn file JSON (nếu None sẽ dùng NAME_FILE_INFO)
+    
+    Returns:
+        Dictionary chứa thông tin
+    """
+    if file_path is None:
+        file_path = NAME_FILE_INFO
+    
+    if not os.path.exists(file_path):
+        raise FileNotFoundError(
+            f"Không tìm thấy file info: {file_path}\n"
+            "Vui lòng chạy xử lý file PDF trước."
+        )
+    
+    with open(file_path, "r", encoding="utf-8") as file:
         info = json.load(file)
+    
     return info
 
-def write_file_info(info: json):
-    with open(os.environ['NAME_FILE_INFO'], "w", encoding="utf-8") as file:
+
+def write_file_info(
+    info: Dict[str, Any],
+    file_path: Optional[str] = None
+) -> None:
+    """
+    Ghi thông tin vào file JSON
+    
+    Args:
+        info: Dictionary chứa thông tin
+        file_path: Đường dẫn file JSON (nếu None sẽ dùng NAME_FILE_INFO)
+    """
+    if file_path is None:
+        file_path = NAME_FILE_INFO
+    
+    with open(file_path, "w", encoding="utf-8") as file:
         json.dump(info, file, ensure_ascii=False, indent=4)
+    
+    logger.debug(f"Đã lưu thông tin vào {file_path}")
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(

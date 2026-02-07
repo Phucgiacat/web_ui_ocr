@@ -17,7 +17,6 @@ class OCR:
     def __init__(self):
         self.client = requests.session()
         self.base_url = f"https://{os.environ['SN_DOMAIN']}/"
-        # self.proxies = proxies or {}
 
     def upload_image(self, req: UploadImageReq , agent):
         url = self.base_url + "api/web/clc-sinonom/image-upload"
@@ -76,9 +75,9 @@ class OCR:
     def ocr(self, req: OCRReq, agent, output_file: str = "ocr_output.json", ocr_id=None, lang_type=None, epitaph=None):
         url = f"{self.base_url}api/web/clc-sinonom/image-ocr"
         headers = {
-            "User-Agent": agent,  # Random User-Agent
+            "User-Agent": 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36 Edg/138.0.0.0',
             "Authorization": f"Bearer {get_firebase_token()}",
-            "Content-Type": "application/json; charset=utf-8"
+            "Content-Type": "application/json"
         }
         # prefer explicit params, fall back to req, then env
         body_ocr_id = ocr_id if ocr_id is not None else getattr(req, 'ocr_id', None) or os.environ.get("TYPE_OCR")

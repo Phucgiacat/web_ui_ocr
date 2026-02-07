@@ -62,7 +62,8 @@ def main():
     print("✅ Setup hoàn thành!")
     print("=" * 60)
     print("\n🎯 Để chạy ứng dụng:")
-    print("   python run.py")
+    print("   python web_ui/run.py  (từ thư mục gốc repo)")
+    print("   hoặc: python run.py  (nếu đang đứng trong thư mục web_ui)")
     print("\n📖 Hoặc xem README.md để biết thêm chi tiết")
 
 if __name__ == "__main__":

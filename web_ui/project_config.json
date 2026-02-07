@@ -1,0 +1,11 @@
+{
+    "output_folder": "D:\\learning\\C.VAnh\\Data\\VBTL",
+    "num_crop_hn": 1,
+    "num_crop_qn": 1,
+    "ocr_id": 1,
+    "lang_type": 2,
+    "epitaph": 1,
+    "vi_dir": "D:\\learning\\C.VAnh\\tool\\output\\ocr\\Quoc_Ngu_ocr",
+    "nom_dir": "D:\\learning\\C.VAnh\\Data\\VBTL\\image\\BIA_TIENLANG",
+    "name_file_info": "before_handle_data.json"
+}
