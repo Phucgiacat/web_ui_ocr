@@ -30,6 +30,7 @@ try:
     from web_ui.config_manager import ConfigManager
     from web_ui.data_handler import DataHandler
     from web_ui.ocr_processor import OCRProcessor
+    from web_ui.ai_analyst import AIAnalyst, LLMProcessor
 except ImportError as e:
     st.error(f"❌ Import Error: {e}")
     st.info("""
@@ -94,6 +95,14 @@ if DEMO_MODE:
             pass
     
     class OCRProcessor:
+        def __init__(self, *args, **kwargs):
+            pass
+
+    class AIAnalyst:
+        def __init__(self, *args, **kwargs):
+            pass
+
+    class LLMProcessor:
         def __init__(self, *args, **kwargs):
             pass
 
@@ -250,8 +259,8 @@ st.markdown("""
 
 selected = option_menu(
     menu_title=None,
-    options=["📥 Trích xuất PDF", "✂️ Cắt ảnh", "👁️ OCR", "🔗 Align", "✏️ Sửa lỗi", "🏷️ Convert Labels", "⚙️ Chi tiết", "📊 Quản lý"],
-    icons=["download", "scissors", "eye", "link", "pencil", "tags", "sliders", "gear"],
+    options=["📥 Trích xuất PDF", "✂️ Cắt ảnh", "👁️ OCR", "🔗 Align", "✏️ Sửa lỗi", "🏷️ Convert Labels", "🤖 AI Analyst", "⚙️ Chi tiết", "📊 Quản lý"],
+    icons=["download", "scissors", "eye", "link", "pencil", "tags", "robot", "sliders", "gear"],
     orientation="horizontal",
     styles={
         "container": {
@@ -1587,7 +1596,116 @@ elif selected == "🏷️ Convert Labels":
                 import traceback
                 st.error(traceback.format_exc())
 
-# =================== TAB 7: CHI TIẾT DỰ ÁN ===================
+# =================== TAB 7: AI ANALYST ===================
+elif selected == "🤖 AI Analyst":
+    st.markdown("<div class='tab-content'>", unsafe_allow_html=True)
+    ModernUIComponents.render_header("AI Analyst", "Phân tích và Tự động làm sạch Dữ liệu", "🤖")
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    st.info("💡 Tính năng này sử dụng AI để tự động phát hiện và sửa lỗi trong dữ liệu OCR của bạn.")
+
+    # Configuration Section
+    with st.expander("⚙️ Cấu hình LLM (Hugging Face)", expanded=False):
+        col1, col2 = st.columns(2)
+        with col1:
+            hf_token = st.text_input("Hugging Face API Token", type="password", help="Nhập token của bạn để sử dụng model thật. Để trống để dùng chế độ Demo (Mock).")
+        with col2:
+            model_id = st.text_input("Model ID", value="meta-llama/Llama-2-7b-chat-hf", help="Ví dụ: 'meta-llama/Llama-2-7b-chat-hf' hoặc 'Qwen/Qwen-7B'")
+
+    # Initialize classes
+    llm_processor = LLMProcessor(api_token=hf_token if hf_token else None, model_id=model_id)
+
+    # File Selection
+    st.markdown("### 📂 Chọn dữ liệu đầu vào")
+
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        default_file = os.path.join(config.output_folder, "result.xlsx")
+        input_file = st.text_input("Đường dẫn file Excel/CSV", value=default_file if os.path.exists(default_file) else "")
+
+    with col2:
+        uploaded_file = st.file_uploader("Upload File", type=['xlsx', 'xls', 'csv'], label_visibility="collapsed")
+
+    # Load Data
+    analyst = None
+    if uploaded_file:
+        # Save uploaded file temporarily
+        temp_path = os.path.join("temp", uploaded_file.name)
+        os.makedirs("temp", exist_ok=True)
+        with open(temp_path, "wb") as f:
+            f.write(uploaded_file.getbuffer())
+        analyst = AIAnalyst(temp_path)
+        st.success(f"✅ Đã tải file: {uploaded_file.name}")
+    elif input_file and os.path.exists(input_file):
+        analyst = AIAnalyst(input_file)
+        st.success(f"✅ Đã tải file: {input_file}")
+
+    # Analysis & Cleaning
+    if analyst and analyst.df is not None:
+        tab1, tab2 = st.tabs(["📊 Phân tích", "✨ Tự động làm sạch"])
+
+        with tab1:
+            stats = analyst.get_statistics()
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("Tổng số dòng", stats.get('rows', 0))
+            with col2:
+                st.metric("Số cột", len(stats.get('columns', [])))
+            with col3:
+                st.metric("Dòng trùng lặp", stats.get('duplicates', 0))
+
+            st.markdown("#### 📉 Missing Values")
+            st.bar_chart(stats.get('missing_values', {}))
+
+            st.markdown("#### 📋 Preview Dữ liệu")
+            st.dataframe(analyst.df.head())
+
+        with tab2:
+            st.markdown("#### 🛠️ Pipeline Tự động")
+
+            # Column selection
+            cols = analyst.df.columns.tolist()
+            target_cols = st.multiselect("Chọn cột cần làm sạch (OCR Correction)", options=cols, default=[cols[0]] if cols else [])
+
+            if st.button("🚀 Chạy AI Cleaning", type="primary"):
+                if not target_cols:
+                    st.warning("Vui lòng chọn ít nhất một cột!")
+                else:
+                    progress_bar = st.progress(0)
+                    status_text = st.empty()
+
+                    status_text.text("Đang khởi tạo AI Model...")
+                    progress_bar.progress(10)
+
+                    # Run cleaning
+                    try:
+                        status_text.text("Đang xử lý dữ liệu với LLM...")
+                        cleaned_df = analyst.run_cleaning_pipeline(target_cols, llm_processor)
+                        progress_bar.progress(90)
+
+                        # Save result
+                        output_clean_path = os.path.join(config.output_folder, "result_cleaned.xlsx")
+                        analyst.save_cleaned_data(cleaned_df, output_clean_path)
+                        progress_bar.progress(100)
+
+                        st.success("✅ Hoàn thành!")
+                        st.markdown(f"**File kết quả:** `{output_clean_path}`")
+
+                        # Show comparison
+                        st.markdown("#### 🔍 So sánh kết quả")
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            st.markdown("**Gốc**")
+                            st.dataframe(analyst.df[target_cols].head())
+                        with col2:
+                            st.markdown("**Đã làm sạch**")
+                            cleaned_cols = [f"{c}_cleaned" for c in target_cols]
+                            st.dataframe(cleaned_df[cleaned_cols].head())
+
+                    except Exception as e:
+                        st.error(f"Lỗi: {e}")
+
+# =================== TAB 8: CHI TIẾT DỰ ÁN ===================
 elif selected == "⚙️ Chi tiết":
     st.markdown("<div class='tab-content'>", unsafe_allow_html=True)
     ModernUIComponents.render_header("Chi tiết Dự án", "Cấu hình và tùy chỉnh hệ thống", "⚙️")
