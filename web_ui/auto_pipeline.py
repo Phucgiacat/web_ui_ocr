@@ -146,9 +146,43 @@ class AutoPipeline:
 
             # 3. OCR
             if progress_callback:
-                progress_callback("Step 3/5: Running OCR...", 40, 100)
+                progress_callback("Step 3/5: Running OCR (Quoc Ngu)...", 40, 100)
 
-            self.ocr_processor.ocr_both(progress_callback=lambda msg, c, t: None) # Suppress internal progress or pipe it?
+            # Run Quoc Ngu OCR once (assuming it's local/stable)
+            self.ocr_processor.ocr_quoc_ngu(progress_callback=lambda msg, c, t: None)
+
+            if progress_callback:
+                progress_callback("Step 3.5/5: Running OCR (Han Nom) with Retry...", 50, 100)
+
+            # Run Han Nom OCR with retry loop until all files are processed
+            max_retries = 10
+            attempt = 0
+            while attempt < max_retries:
+                # Check progress
+                progress_info = self.ocr_processor.get_ocr_progress()
+                processed = progress_info.get('processed_count', 0)
+                total = progress_info.get('total_count', 0)
+
+                if total > 0 and processed >= total:
+                    print("OCR Han Nom completed successfully.")
+                    break
+
+                print(f"OCR Han Nom Progress: {processed}/{total}. Attempt {attempt + 1}/{max_retries}")
+                if progress_callback:
+                    progress_callback(f"OCR Han Nom: {processed}/{total} (Attempt {attempt+1})", 50, 100)
+
+                try:
+                    # Run/Resume OCR
+                    self.ocr_processor.ocr_han_nom(progress_callback=lambda msg, c, t: None)
+                except Exception as e:
+                    print(f"OCR attempt failed: {e}")
+
+                attempt += 1
+
+            # Final check
+            progress_info = self.ocr_processor.get_ocr_progress()
+            if progress_info.get('total_count', 0) > 0 and progress_info.get('processed_count', 0) < progress_info.get('total_count', 0):
+                print("Warning: OCR Han Nom did not complete all files after retries.")
 
             # 4. Read OCR Results
             if progress_callback:
