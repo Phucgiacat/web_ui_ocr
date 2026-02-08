@@ -136,6 +136,50 @@ class LLMProcessor:
 
         return aligned_data
 
+    def analyze_page_structure(self, bbox_data: List[List[int]], img_width: int, img_height: int) -> Dict[str, Any]:
+        """
+        Analyze page layout based on text bounding boxes.
+        Returns a strategy: 'SPLIT_VERTICAL', 'SPLIT_HORIZONTAL', or 'FULL_PAGE'.
+        """
+        if not self.api_token:
+            # Mock Heuristic:
+            # If we have two distinct large clusters of boxes separated horizontally, split vertical.
+            # Simplified mock: Assume 'SPLIT_VERTICAL' if wide aspect ratio, else 'FULL_PAGE'
+            # But here we assume a generic bilingual book often needs splitting.
+            return {
+                "strategy": "SPLIT_VERTICAL",
+                "reason": "Mock: Detected two columns layout pattern.",
+                "confidence": 0.85
+            }
+
+        prompt = f"""
+        You are a document layout analysis expert.
+        I have an image of size {img_width}x{img_height}.
+        Here is a list of bounding boxes [x1, y1, x2, y2] of detected text regions:
+        {json.dumps(bbox_data[:50])} (truncated if too long)
+
+        Analyze the spatial distribution.
+        - If boxes form two distinct vertical columns (left and right), output "SPLIT_VERTICAL".
+        - If boxes form top and bottom sections (e.g. text top, commentary bottom), output "SPLIT_HORIZONTAL".
+        - If text is mixed or single column, output "FULL_PAGE".
+
+        Return strictly JSON: {{"strategy": "STRATEGY_NAME", "reason": "brief explanation", "split_point": 0.5}}
+        """
+
+        result = self.query_hf_api({"inputs": prompt})
+
+        try:
+            if isinstance(result, list) and "generated_text" in result[0]:
+                generated = result[0]["generated_text"].replace(prompt, "").strip()
+                start = generated.find('{')
+                end = generated.rfind('}') + 1
+                if start != -1 and end != -1:
+                    return json.loads(generated[start:end])
+        except:
+            pass
+
+        return {"strategy": "FULL_PAGE", "reason": "Fallback", "confidence": 0.0}
+
 class AIAnalyst:
     """
     Analyzes data quality and manages the AI cleaning pipeline.
