@@ -28409,3 +28409,241 @@ The server didn't respond in time.
 2026-02-08 16:11:10,649 - NOMOCR - ERROR - ❌ Error on attempt 1/3: t_file_extension_invalid
 2026-02-08 16:11:10,649 - NOMOCR - WARNING - ⏳ Retrying in 5.92s...
 2026-02-08 16:11:10,650 - NOMOCR - DEBUG - Sleeping 5.92s - Exponential backoff (attempt 1)
+2026-02-08 16:45:32,847 - NOMOCR - INFO - ===== OCR SESSION START =====
+2026-02-08 16:45:32,848 - NOMOCR - INFO - Total files: 134
+2026-02-08 16:45:32,849 - NOMOCR - INFO - Previously processed: 0
+2026-02-08 16:45:32,849 - NOMOCR - INFO - Rate limit config:
+2026-02-08 16:45:32,850 - NOMOCR - INFO -   - Upload delay: 2.0s
+2026-02-08 16:45:32,850 - NOMOCR - INFO -   - After upload: 3.0s
+2026-02-08 16:45:32,851 - NOMOCR - INFO -   - Download delay: 2.0s
+2026-02-08 16:45:32,851 - NOMOCR - INFO -   - Between files: 3.0s
+2026-02-08 16:45:32,851 - NOMOCR - INFO -   - Max retries: 3
+2026-02-08 16:45:32,852 - NOMOCR - INFO -   - Circuit breaker: 5 failures
+2026-02-08 16:45:32,856 - NOMOCR - INFO - 
+============================================================
+2026-02-08 16:45:32,856 - NOMOCR - INFO - Processing file: RCM_001_000_002_001.jpg (1/134)
+2026-02-08 16:45:32,857 - NOMOCR - INFO - Stats: Skipped=0, Processed=0, Failures=0
+2026-02-08 16:45:32,857 - NOMOCR - DEBUG - Sleeping 2.00s - Before upload (attempt 1)
+2026-02-08 16:45:34,859 - NOMOCR - INFO - [Attempt 1/3] Uploading image: RCM_001_000_002_001.jpg
+2026-02-08 16:45:35,142 - NOMOCR - INFO - ✅ Upload success: upload_da4702c190394786bb5c43c92dc2f5a3.jpg
+2026-02-08 16:45:35,143 - NOMOCR - DEBUG - Sleeping 3.00s - After upload
+2026-02-08 16:45:38,144 - NOMOCR - INFO - [Attempt 1/3] OCR processing: RCM_001_000_002_001.jpg
+2026-02-08 16:45:44,410 - NOMOCR - INFO - ✅ OCR success: temp_42cb9c82598b41bb95b3d3c5283116e1.jpg
+2026-02-08 16:45:44,424 - NOMOCR - DEBUG - Sleeping 2.00s - Before download
+2026-02-08 16:45:46,424 - NOMOCR - INFO - [Attempt 1/3] Downloading: RCM_001_000_002_001.jpg
+2026-02-08 16:45:46,502 - NOMOCR - INFO - ✅ Download success: D:\learning\C.VAnh\Data\VBTL/ocr/image_bbox\RCM_001_000_002_001.jpeg
+2026-02-08 16:45:46,515 - NOMOCR - DEBUG - Sleeping 2.00s - Before download
+2026-02-08 16:45:48,516 - NOMOCR - INFO - Downloading result image: RCM_001_000_002_001.jpg (attempt 1/3)
+2026-02-08 16:45:48,590 - NOMOCR - INFO - Download success: D:\learning\C.VAnh\Data\VBTL/ocr/image_bbox\RCM_001_000_002_001.jpeg
+2026-02-08 16:45:48,590 - NOMOCR - INFO - ✅ SUCCESS: RCM_001_000_002_001.jpg (Processed=1, Skipped=0, Failures=0)
+2026-02-08 16:45:48,591 - NOMOCR - DEBUG - Sleeping 3.00s - Between files (multiplier=1.00)
+2026-02-08 16:45:51,595 - NOMOCR - INFO - 
+============================================================
+2026-02-08 16:45:51,595 - NOMOCR - INFO - Processing file: RCM_001_000_003.txt (2/134)
+2026-02-08 16:45:51,596 - NOMOCR - INFO - Stats: Skipped=0, Processed=1, Failures=0
+2026-02-08 16:45:51,599 - NOMOCR - DEBUG - Sleeping 2.00s - Before upload (attempt 1)
+2026-02-08 16:45:53,599 - NOMOCR - INFO - [Attempt 1/3] Uploading image: RCM_001_000_003.txt
+2026-02-08 16:45:53,714 - NOMOCR - ERROR - ❌ Error on attempt 1/3: t_file_extension_invalid
+2026-02-08 16:45:53,714 - NOMOCR - WARNING - ⏳ Retrying in 6.08s...
+2026-02-08 16:45:53,715 - NOMOCR - DEBUG - Sleeping 6.08s - Exponential backoff (attempt 1)
+2026-02-08 16:45:59,794 - NOMOCR - DEBUG - Sleeping 2.00s - Before upload (attempt 2)
+2026-02-08 16:46:01,795 - NOMOCR - INFO - [Attempt 2/3] Uploading image: RCM_001_000_003.txt
+2026-02-08 16:46:01,821 - NOMOCR - ERROR - ❌ Error on attempt 2/3: t_file_extension_invalid
+2026-02-08 16:46:01,821 - NOMOCR - WARNING - ⏳ Retrying in 8.12s...
+2026-02-08 16:46:01,825 - NOMOCR - DEBUG - Sleeping 8.12s - Exponential backoff (attempt 2)
+2026-02-08 16:46:10,004 - NOMOCR - ERROR - Resize failed before retry 3: cannot identify image file 'D:\\learning\\C.VAnh\\Data\\VBTL/image/Han Nom\\RCM_001_000_003.txt'
+2026-02-08 16:46:10,004 - NOMOCR - DEBUG - Sleeping 2.00s - Before upload (attempt 3)
+2026-02-08 16:46:12,005 - NOMOCR - INFO - [Attempt 3/3] Uploading image: RCM_001_000_003.txt
+2026-02-08 16:46:12,031 - NOMOCR - ERROR - ❌ Error on attempt 3/3: t_file_extension_invalid
+2026-02-08 16:46:12,032 - NOMOCR - ERROR - ❌ All 3 attempts failed for RCM_001_000_003.txt
+2026-02-08 16:46:12,033 - NOMOCR - ERROR - ❌ FAILED: RCM_001_000_003.txt after 3 attempts
+2026-02-08 16:46:12,036 - NOMOCR - INFO - 
+============================================================
+2026-02-08 16:46:12,037 - NOMOCR - INFO - Processing file: RCM_001_000_004.txt (3/134)
+2026-02-08 16:46:12,037 - NOMOCR - INFO - Stats: Skipped=0, Processed=1, Failures=1
+2026-02-08 16:46:12,039 - NOMOCR - DEBUG - Sleeping 2.00s - Before upload (attempt 1)
+2026-02-08 16:46:14,040 - NOMOCR - INFO - [Attempt 1/3] Uploading image: RCM_001_000_004.txt
+2026-02-08 16:46:14,178 - NOMOCR - ERROR - ❌ Error on attempt 1/3: t_file_extension_invalid
+2026-02-08 16:46:14,178 - NOMOCR - WARNING - ⏳ Retrying in 3.80s...
+2026-02-08 16:46:14,180 - NOMOCR - DEBUG - Sleeping 3.80s - Exponential backoff (attempt 1)
+2026-02-08 16:46:17,977 - NOMOCR - DEBUG - Sleeping 2.00s - Before upload (attempt 2)
+2026-02-08 16:46:19,978 - NOMOCR - INFO - [Attempt 2/3] Uploading image: RCM_001_000_004.txt
+2026-02-08 16:46:20,007 - NOMOCR - ERROR - ❌ Error on attempt 2/3: t_file_extension_invalid
+2026-02-08 16:46:20,007 - NOMOCR - WARNING - ⏳ Retrying in 7.98s...
+2026-02-08 16:46:20,008 - NOMOCR - DEBUG - Sleeping 7.98s - Exponential backoff (attempt 2)
+2026-02-08 16:46:27,927 - NOMOCR - INFO - ===== OCR SESSION START =====
+2026-02-08 16:46:27,928 - NOMOCR - INFO - Total files: 122
+2026-02-08 16:46:27,930 - NOMOCR - INFO - Previously processed: 0
+2026-02-08 16:46:27,931 - NOMOCR - INFO - Rate limit config:
+2026-02-08 16:46:27,932 - NOMOCR - INFO -   - Upload delay: 2.0s
+2026-02-08 16:46:27,932 - NOMOCR - INFO -   - After upload: 3.0s
+2026-02-08 16:46:27,932 - NOMOCR - INFO -   - Download delay: 2.0s
+2026-02-08 16:46:27,932 - NOMOCR - INFO -   - Between files: 3.0s
+2026-02-08 16:46:27,933 - NOMOCR - INFO -   - Max retries: 3
+2026-02-08 16:46:27,933 - NOMOCR - INFO -   - Circuit breaker: 5 failures
+2026-02-08 16:46:27,934 - NOMOCR - INFO - 
+============================================================
+2026-02-08 16:46:27,934 - NOMOCR - INFO - Processing file: RCM_001_000_002_001.jpg (1/122)
+2026-02-08 16:46:27,935 - NOMOCR - INFO - Stats: Skipped=0, Processed=0, Failures=0
+2026-02-08 16:46:27,935 - NOMOCR - DEBUG - Sleeping 2.00s - Before upload (attempt 1)
+2026-02-08 16:46:27,988 - NOMOCR - ERROR - Resize failed before retry 3: cannot identify image file 'D:\\learning\\C.VAnh\\Data\\VBTL/image/Han Nom\\RCM_001_000_004.txt'
+2026-02-08 16:46:27,988 - NOMOCR - DEBUG - Sleeping 2.00s - Before upload (attempt 3)
+2026-02-08 16:46:29,936 - NOMOCR - INFO - [Attempt 1/3] Uploading image: RCM_001_000_002_001.jpg
+2026-02-08 16:46:29,989 - NOMOCR - INFO - [Attempt 3/3] Uploading image: RCM_001_000_004.txt
+2026-02-08 16:46:30,025 - NOMOCR - ERROR - ❌ Error on attempt 3/3: t_file_extension_invalid
+2026-02-08 16:46:30,025 - NOMOCR - ERROR - ❌ All 3 attempts failed for RCM_001_000_004.txt
+2026-02-08 16:46:30,025 - NOMOCR - ERROR - ❌ FAILED: RCM_001_000_004.txt after 3 attempts
+2026-02-08 16:46:30,026 - NOMOCR - INFO - 
+============================================================
+2026-02-08 16:46:30,027 - NOMOCR - INFO - Processing file: RCM_001_000_005.txt (4/134)
+2026-02-08 16:46:30,027 - NOMOCR - INFO - Stats: Skipped=0, Processed=1, Failures=2
+2026-02-08 16:46:30,028 - NOMOCR - DEBUG - Sleeping 2.00s - Before upload (attempt 1)
+2026-02-08 16:46:30,191 - NOMOCR - INFO - ✅ Upload success: upload_37225148f1e64d2db19115ba49cef754.jpg
+2026-02-08 16:46:30,191 - NOMOCR - DEBUG - Sleeping 3.00s - After upload
+2026-02-08 16:46:32,029 - NOMOCR - INFO - [Attempt 1/3] Uploading image: RCM_001_000_005.txt
+2026-02-08 16:46:32,030 - NOMOCR - ERROR - ❌ Error on attempt 1/3: File not found: D:\learning\C.VAnh\Data\VBTL/image/Han Nom\RCM_001_000_005.txt
+2026-02-08 16:46:32,033 - NOMOCR - WARNING - ⏳ Retrying in 5.42s...
+2026-02-08 16:46:32,034 - NOMOCR - DEBUG - Sleeping 5.42s - Exponential backoff (attempt 1)
+2026-02-08 16:46:33,193 - NOMOCR - INFO - [Attempt 1/3] OCR processing: RCM_001_000_002_001.jpg
+2026-02-08 16:46:37,459 - NOMOCR - DEBUG - Sleeping 2.00s - Before upload (attempt 2)
+2026-02-08 16:46:38,983 - NOMOCR - INFO - ✅ OCR success: temp_c3d97b84062f478b8f33dacee3916347.jpg
+2026-02-08 16:46:38,997 - NOMOCR - DEBUG - Sleeping 2.00s - Before download
+2026-02-08 16:46:39,460 - NOMOCR - INFO - [Attempt 2/3] Uploading image: RCM_001_000_005.txt
+2026-02-08 16:46:39,461 - NOMOCR - ERROR - ❌ Error on attempt 2/3: File not found: D:\learning\C.VAnh\Data\VBTL/image/Han Nom\RCM_001_000_005.txt
+2026-02-08 16:46:39,462 - NOMOCR - WARNING - ⏳ Retrying in 11.87s...
+2026-02-08 16:46:39,462 - NOMOCR - DEBUG - Sleeping 11.87s - Exponential backoff (attempt 2)
+2026-02-08 16:46:40,998 - NOMOCR - INFO - [Attempt 1/3] Downloading: RCM_001_000_002_001.jpg
+2026-02-08 16:46:41,111 - NOMOCR - INFO - ✅ Download success: D:\learning\C.VAnh\Data\VBTL/ocr/image_bbox\RCM_001_000_002_001.jpeg
+2026-02-08 16:46:41,125 - NOMOCR - DEBUG - Sleeping 2.00s - Before download
+2026-02-08 16:46:43,125 - NOMOCR - INFO - Downloading result image: RCM_001_000_002_001.jpg (attempt 1/3)
+2026-02-08 16:46:43,198 - NOMOCR - INFO - Download success: D:\learning\C.VAnh\Data\VBTL/ocr/image_bbox\RCM_001_000_002_001.jpeg
+2026-02-08 16:46:43,198 - NOMOCR - INFO - ✅ SUCCESS: RCM_001_000_002_001.jpg (Processed=1, Skipped=0, Failures=0)
+2026-02-08 16:46:43,199 - NOMOCR - DEBUG - Sleeping 3.00s - Between files (multiplier=1.00)
+2026-02-08 16:46:46,201 - NOMOCR - INFO - 
+============================================================
+2026-02-08 16:46:46,201 - NOMOCR - INFO - Processing file: RCM_001_000_004.txt (2/122)
+2026-02-08 16:46:46,201 - NOMOCR - INFO - Stats: Skipped=0, Processed=1, Failures=0
+2026-02-08 16:46:46,203 - NOMOCR - DEBUG - Sleeping 2.00s - Before upload (attempt 1)
+2026-02-08 16:46:48,203 - NOMOCR - INFO - [Attempt 1/3] Uploading image: RCM_001_000_004.txt
+2026-02-08 16:46:48,353 - NOMOCR - ERROR - ❌ Error on attempt 1/3: t_file_extension_invalid
+2026-02-08 16:46:48,354 - NOMOCR - WARNING - ⏳ Retrying in 5.48s...
+2026-02-08 16:46:48,354 - NOMOCR - DEBUG - Sleeping 5.48s - Exponential backoff (attempt 1)
+2026-02-08 16:46:51,338 - NOMOCR - ERROR - Resize failed before retry 3: [Errno 2] No such file or directory: 'D:\\learning\\C.VAnh\\Data\\VBTL/image/Han Nom\\RCM_001_000_005.txt'
+2026-02-08 16:46:51,339 - NOMOCR - DEBUG - Sleeping 2.00s - Before upload (attempt 3)
+2026-02-08 16:46:53,340 - NOMOCR - INFO - [Attempt 3/3] Uploading image: RCM_001_000_005.txt
+2026-02-08 16:46:53,341 - NOMOCR - ERROR - ❌ Error on attempt 3/3: File not found: D:\learning\C.VAnh\Data\VBTL/image/Han Nom\RCM_001_000_005.txt
+2026-02-08 16:46:53,341 - NOMOCR - ERROR - ❌ All 3 attempts failed for RCM_001_000_005.txt
+2026-02-08 16:46:53,341 - NOMOCR - ERROR - ❌ FAILED: RCM_001_000_005.txt after 3 attempts
+2026-02-08 16:46:53,342 - NOMOCR - INFO - 
+============================================================
+2026-02-08 16:46:53,343 - NOMOCR - INFO - Processing file: RCM_001_000_006.txt (5/134)
+2026-02-08 16:46:53,343 - NOMOCR - INFO - Stats: Skipped=0, Processed=1, Failures=3
+2026-02-08 16:46:53,344 - NOMOCR - DEBUG - Sleeping 2.00s - Before upload (attempt 1)
+2026-02-08 16:46:53,831 - NOMOCR - DEBUG - Sleeping 2.00s - Before upload (attempt 2)
+2026-02-08 16:46:55,345 - NOMOCR - INFO - [Attempt 1/3] Uploading image: RCM_001_000_006.txt
+2026-02-08 16:46:55,440 - NOMOCR - ERROR - ❌ Error on attempt 1/3: t_file_extension_invalid
+2026-02-08 16:46:55,441 - NOMOCR - WARNING - ⏳ Retrying in 5.81s...
+2026-02-08 16:46:55,442 - NOMOCR - DEBUG - Sleeping 5.81s - Exponential backoff (attempt 1)
+2026-02-08 16:46:55,832 - NOMOCR - INFO - [Attempt 2/3] Uploading image: RCM_001_000_004.txt
+2026-02-08 16:46:55,859 - NOMOCR - ERROR - ❌ Error on attempt 2/3: t_file_extension_invalid
+2026-02-08 16:46:55,860 - NOMOCR - WARNING - ⏳ Retrying in 10.52s...
+2026-02-08 16:46:55,862 - NOMOCR - DEBUG - Sleeping 10.52s - Exponential backoff (attempt 2)
+2026-02-08 16:47:01,253 - NOMOCR - DEBUG - Sleeping 2.00s - Before upload (attempt 2)
+2026-02-08 16:47:03,254 - NOMOCR - INFO - [Attempt 2/3] Uploading image: RCM_001_000_006.txt
+2026-02-08 16:47:03,281 - NOMOCR - ERROR - ❌ Error on attempt 2/3: t_file_extension_invalid
+2026-02-08 16:47:03,281 - NOMOCR - WARNING - ⏳ Retrying in 11.95s...
+2026-02-08 16:47:03,282 - NOMOCR - DEBUG - Sleeping 11.95s - Exponential backoff (attempt 2)
+2026-02-08 16:47:06,381 - NOMOCR - ERROR - Resize failed before retry 3: cannot identify image file 'D:\\learning\\C.VAnh\\Data\\VBTL/image/Han Nom\\RCM_001_000_004.txt'
+2026-02-08 16:47:06,382 - NOMOCR - DEBUG - Sleeping 2.00s - Before upload (attempt 3)
+2026-02-08 16:47:08,383 - NOMOCR - INFO - [Attempt 3/3] Uploading image: RCM_001_000_004.txt
+2026-02-08 16:47:08,409 - NOMOCR - ERROR - ❌ Error on attempt 3/3: t_file_extension_invalid
+2026-02-08 16:47:08,410 - NOMOCR - ERROR - ❌ All 3 attempts failed for RCM_001_000_004.txt
+2026-02-08 16:47:08,410 - NOMOCR - ERROR - ❌ FAILED: RCM_001_000_004.txt after 3 attempts
+2026-02-08 16:47:08,413 - NOMOCR - INFO - 
+============================================================
+2026-02-08 16:47:08,413 - NOMOCR - INFO - Processing file: RCM_001_000_006.txt (3/122)
+2026-02-08 16:47:08,414 - NOMOCR - INFO - Stats: Skipped=0, Processed=1, Failures=1
+2026-02-08 16:47:08,415 - NOMOCR - DEBUG - Sleeping 2.00s - Before upload (attempt 1)
+2026-02-08 16:47:10,416 - NOMOCR - INFO - [Attempt 1/3] Uploading image: RCM_001_000_006.txt
+2026-02-08 16:47:10,549 - NOMOCR - ERROR - ❌ Error on attempt 1/3: t_file_extension_invalid
+2026-02-08 16:47:10,550 - NOMOCR - WARNING - ⏳ Retrying in 4.17s...
+2026-02-08 16:47:10,551 - NOMOCR - DEBUG - Sleeping 4.17s - Exponential backoff (attempt 1)
+2026-02-08 16:47:14,722 - NOMOCR - DEBUG - Sleeping 2.00s - Before upload (attempt 2)
+2026-02-08 16:47:15,233 - NOMOCR - ERROR - Resize failed before retry 3: cannot identify image file 'D:\\learning\\C.VAnh\\Data\\VBTL/image/Han Nom\\RCM_001_000_006.txt'
+2026-02-08 16:47:15,234 - NOMOCR - DEBUG - Sleeping 2.00s - Before upload (attempt 3)
+2026-02-08 16:47:16,723 - NOMOCR - INFO - [Attempt 2/3] Uploading image: RCM_001_000_006.txt
+2026-02-08 16:47:16,757 - NOMOCR - ERROR - ❌ Error on attempt 2/3: t_file_extension_invalid
+2026-02-08 16:47:16,757 - NOMOCR - WARNING - ⏳ Retrying in 11.21s...
+2026-02-08 16:47:16,760 - NOMOCR - DEBUG - Sleeping 11.21s - Exponential backoff (attempt 2)
+2026-02-08 16:47:17,235 - NOMOCR - INFO - [Attempt 3/3] Uploading image: RCM_001_000_006.txt
+2026-02-08 16:47:17,267 - NOMOCR - ERROR - ❌ Error on attempt 3/3: t_file_extension_invalid
+2026-02-08 16:47:17,267 - NOMOCR - ERROR - ❌ All 3 attempts failed for RCM_001_000_006.txt
+2026-02-08 16:47:17,269 - NOMOCR - ERROR - ❌ FAILED: RCM_001_000_006.txt after 3 attempts
+2026-02-08 16:47:17,274 - NOMOCR - INFO - 
+============================================================
+2026-02-08 16:47:17,275 - NOMOCR - INFO - Processing file: RCM_001_000_007.txt (6/134)
+2026-02-08 16:47:17,276 - NOMOCR - INFO - Stats: Skipped=0, Processed=1, Failures=4
+2026-02-08 16:47:17,278 - NOMOCR - DEBUG - Sleeping 2.00s - Before upload (attempt 1)
+2026-02-08 16:47:19,279 - NOMOCR - INFO - [Attempt 1/3] Uploading image: RCM_001_000_007.txt
+2026-02-08 16:47:19,279 - NOMOCR - ERROR - ❌ Error on attempt 1/3: File not found: D:\learning\C.VAnh\Data\VBTL/image/Han Nom\RCM_001_000_007.txt
+2026-02-08 16:47:19,280 - NOMOCR - WARNING - ⏳ Retrying in 4.75s...
+2026-02-08 16:47:19,281 - NOMOCR - DEBUG - Sleeping 4.75s - Exponential backoff (attempt 1)
+2026-02-08 16:47:24,030 - NOMOCR - DEBUG - Sleeping 2.00s - Before upload (attempt 2)
+2026-02-08 16:47:26,031 - NOMOCR - INFO - [Attempt 2/3] Uploading image: RCM_001_000_007.txt
+2026-02-08 16:47:26,031 - NOMOCR - ERROR - ❌ Error on attempt 2/3: File not found: D:\learning\C.VAnh\Data\VBTL/image/Han Nom\RCM_001_000_007.txt
+2026-02-08 16:47:26,032 - NOMOCR - WARNING - ⏳ Retrying in 11.93s...
+2026-02-08 16:47:26,032 - NOMOCR - DEBUG - Sleeping 11.93s - Exponential backoff (attempt 2)
+2026-02-08 16:47:27,973 - NOMOCR - ERROR - Resize failed before retry 3: cannot identify image file 'D:\\learning\\C.VAnh\\Data\\VBTL/image/Han Nom\\RCM_001_000_006.txt'
+2026-02-08 16:47:27,973 - NOMOCR - DEBUG - Sleeping 2.00s - Before upload (attempt 3)
+2026-02-08 16:47:29,975 - NOMOCR - INFO - [Attempt 3/3] Uploading image: RCM_001_000_006.txt
+2026-02-08 16:47:30,001 - NOMOCR - ERROR - ❌ Error on attempt 3/3: t_file_extension_invalid
+2026-02-08 16:47:30,002 - NOMOCR - ERROR - ❌ All 3 attempts failed for RCM_001_000_006.txt
+2026-02-08 16:47:30,003 - NOMOCR - ERROR - ❌ FAILED: RCM_001_000_006.txt after 3 attempts
+2026-02-08 16:47:30,006 - NOMOCR - INFO - 
+============================================================
+2026-02-08 16:47:30,007 - NOMOCR - INFO - Processing file: RCM_001_000_008.txt (4/122)
+2026-02-08 16:47:30,007 - NOMOCR - INFO - Stats: Skipped=0, Processed=1, Failures=2
+2026-02-08 16:47:30,014 - NOMOCR - DEBUG - Sleeping 2.00s - Before upload (attempt 1)
+2026-02-08 16:47:32,015 - NOMOCR - INFO - [Attempt 1/3] Uploading image: RCM_001_000_008.txt
+2026-02-08 16:47:32,137 - NOMOCR - ERROR - ❌ Error on attempt 1/3: t_file_extension_invalid
+2026-02-08 16:47:32,137 - NOMOCR - WARNING - ⏳ Retrying in 4.62s...
+2026-02-08 16:47:32,138 - NOMOCR - DEBUG - Sleeping 4.62s - Exponential backoff (attempt 1)
+2026-02-08 16:47:36,760 - NOMOCR - DEBUG - Sleeping 2.00s - Before upload (attempt 2)
+2026-02-08 16:47:37,959 - NOMOCR - ERROR - Resize failed before retry 3: [Errno 2] No such file or directory: 'D:\\learning\\C.VAnh\\Data\\VBTL/image/Han Nom\\RCM_001_000_007.txt'
+2026-02-08 16:47:37,960 - NOMOCR - DEBUG - Sleeping 2.00s - Before upload (attempt 3)
+2026-02-08 16:47:38,761 - NOMOCR - INFO - [Attempt 2/3] Uploading image: RCM_001_000_008.txt
+2026-02-08 16:47:38,793 - NOMOCR - ERROR - ❌ Error on attempt 2/3: t_file_extension_invalid
+2026-02-08 16:47:38,794 - NOMOCR - WARNING - ⏳ Retrying in 9.87s...
+2026-02-08 16:47:38,795 - NOMOCR - DEBUG - Sleeping 9.87s - Exponential backoff (attempt 2)
+2026-02-08 16:47:39,962 - NOMOCR - INFO - [Attempt 3/3] Uploading image: RCM_001_000_007.txt
+2026-02-08 16:47:39,963 - NOMOCR - ERROR - ❌ Error on attempt 3/3: File not found: D:\learning\C.VAnh\Data\VBTL/image/Han Nom\RCM_001_000_007.txt
+2026-02-08 16:47:39,964 - NOMOCR - ERROR - ❌ All 3 attempts failed for RCM_001_000_007.txt
+2026-02-08 16:47:39,964 - NOMOCR - ERROR - ❌ FAILED: RCM_001_000_007.txt after 3 attempts
+2026-02-08 16:47:39,965 - NOMOCR - ERROR - ⛔ CIRCUIT BREAKER ACTIVATED!
+2026-02-08 16:47:39,965 - NOMOCR - ERROR - Too many consecutive failures (5). Cooling down for 30.0s...
+2026-02-08 16:47:39,965 - NOMOCR - DEBUG - Sleeping 30.00s - Circuit breaker cooldown
+2026-02-08 16:47:48,669 - NOMOCR - ERROR - Resize failed before retry 3: cannot identify image file 'D:\\learning\\C.VAnh\\Data\\VBTL/image/Han Nom\\RCM_001_000_008.txt'
+2026-02-08 16:47:48,727 - NOMOCR - DEBUG - Sleeping 2.00s - Before upload (attempt 3)
+2026-02-08 16:47:50,728 - NOMOCR - INFO - [Attempt 3/3] Uploading image: RCM_001_000_008.txt
+2026-02-08 16:47:50,756 - NOMOCR - ERROR - ❌ Error on attempt 3/3: t_file_extension_invalid
+2026-02-08 16:47:50,756 - NOMOCR - ERROR - ❌ All 3 attempts failed for RCM_001_000_008.txt
+2026-02-08 16:47:50,757 - NOMOCR - ERROR - ❌ FAILED: RCM_001_000_008.txt after 3 attempts
+2026-02-08 16:47:50,758 - NOMOCR - INFO - 
+============================================================
+2026-02-08 16:47:50,760 - NOMOCR - INFO - Processing file: RCM_001_000_010.txt (5/122)
+2026-02-08 16:47:50,760 - NOMOCR - INFO - Stats: Skipped=0, Processed=1, Failures=3
+2026-02-08 16:47:50,762 - NOMOCR - DEBUG - Sleeping 2.00s - Before upload (attempt 1)
+2026-02-08 16:47:52,763 - NOMOCR - INFO - [Attempt 1/3] Uploading image: RCM_001_000_010.txt
+2026-02-08 16:47:52,863 - NOMOCR - ERROR - ❌ Error on attempt 1/3: t_file_extension_invalid
+2026-02-08 16:47:52,864 - NOMOCR - WARNING - ⏳ Retrying in 6.23s...
+2026-02-08 16:47:52,865 - NOMOCR - DEBUG - Sleeping 6.23s - Exponential backoff (attempt 1)
+2026-02-08 16:47:59,093 - NOMOCR - DEBUG - Sleeping 2.00s - Before upload (attempt 2)
+2026-02-08 16:48:01,094 - NOMOCR - INFO - [Attempt 2/3] Uploading image: RCM_001_000_010.txt
+2026-02-08 16:48:01,120 - NOMOCR - ERROR - ❌ Error on attempt 2/3: t_file_extension_invalid
+2026-02-08 16:48:01,121 - NOMOCR - WARNING - ⏳ Retrying in 9.65s...
+2026-02-08 16:48:01,123 - NOMOCR - DEBUG - Sleeping 9.65s - Exponential backoff (attempt 2)
+2026-02-08 16:48:09,966 - NOMOCR - INFO - 
+============================================================
+2026-02-08 16:48:09,966 - NOMOCR - INFO - Processing file: RCM_001_000_008.txt (7/134)
+2026-02-08 16:48:09,967 - NOMOCR - INFO - Stats: Skipped=0, Processed=1, Failures=5
+2026-02-08 16:48:09,967 - NOMOCR - DEBUG - Sleeping 3.00s - Before upload (attempt 1)
