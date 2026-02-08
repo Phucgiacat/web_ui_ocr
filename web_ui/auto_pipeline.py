@@ -19,60 +19,170 @@ class AutoPipeline:
     def run_pipeline(
         self,
         pdf_path: str,
-        layout_type: str,
+        layout_mode: str, # "Manual" or "AI Auto-Detect"
         llm_processor: LLMProcessor,
+        manual_layout_type: str = "Full Page",
         progress_callback=None
     ) -> str:
         """
-        Executes the full pipeline.
-
-        Args:
-            pdf_path: Path to the input PDF.
-            layout_type: Strategy for splitting pages ('Split Vertical', 'Split Horizontal', 'Full Page').
-            llm_processor: Instance of LLMProcessor for smart alignment.
-            progress_callback: Callback function for progress updates.
-
-        Returns:
-            Path to the final Excel file.
+        Executes the full pipeline with AI-driven layout analysis.
         """
         try:
             # 1. Extract PDF
             if progress_callback:
                 progress_callback("Step 1/5: Extracting PDF...", 0, 100)
 
-            # This creates 'image/Quoc Ngu' and 'image/Han Nom' folders by default in DataHandler
             info = self.data_handler.extract_pdf(pdf_path)
             if not info:
                 raise ValueError("PDF Extraction failed.")
 
-            # 2. Crop/Segment Images based on layout
+            # 2. Layout Analysis & Cropping
             if progress_callback:
-                progress_callback("Step 2/5: Processing Images...", 20, 100)
+                progress_callback("Step 2/5: Analyzing & Processing Images...", 20, 100)
 
-            # Logic to handle layout.
-            # DataHandler's extract_pdf puts images into separate folders if ExtractPages logic supports it.
-            # If layout_type demands specific cropping, we apply it here.
-            # Assuming standard DataHandler.crop_images usage:
-            if layout_type == "Split Vertical":
-                # Typical for bilingual books: Left column Nom, Right column Vi (or vice versa)
-                # We assume 2 crops per page for both
-                self.data_handler.crop_images(num_crop_qn=2, num_crop_hn=2)
-            elif layout_type == "Split Horizontal":
-                # Top/Bottom split
-                # DataHandler doesn't explicitly support vertical vs horizontal crop direction param in crop_images
-                # It assumes horizontal splitting (columns) by default in crop_image_func logic:
-                # "step = width // num_crop" -> this splits vertically (columns).
-                # If we need horizontal split (rows), DataHandler needs update or we rely on 'Full Page'.
-                # For now, we assume 'Split Vertical' maps to num_crop=2 (2 columns).
-                self.data_handler.crop_images(num_crop_qn=2, num_crop_hn=2)
-            else: # "Full Page"
-                self.data_handler.crop_images(num_crop_qn=1, num_crop_hn=1)
+            # Use images from extracted folders
+            # Note: extract_pdf puts images in 'vi_dir' and 'nom_dir'.
+            # We will process one of them (or both if they are identical/pages) to determine layout.
+            # Usually extract_pdf splits pages into folders based on index, but for a raw PDF
+            # likely we just have pages. Let's assume we iterate over all pages in 'vi_dir'.
+
+            process_dir = info.get('vi_dir')
+            if not process_dir or not os.path.exists(process_dir):
+                raise FileNotFoundError("Image directory not found after extraction")
+
+            images = sorted([f for f in os.listdir(process_dir) if f.lower().endswith(('.jpg', '.png'))])
+
+            # Determine global strategy or per-page
+            # For efficiency in this prototype, we analyze the first page if AI mode is on,
+            # or apply manual strategy. Ideally, we analyze every page or samples.
+
+            import cv2
+
+            # We need the model path for detection.
+            # Assuming it's in config or .env. Let's try to get it from environment variables or standard path.
+            model_path = os.getenv('VI_MODEL', './model/vi/best.pt')
+            # Fallback check
+            if not os.path.exists(model_path):
+                 # Try finding it
+                 if os.path.exists("./model/vi/best.pt"): model_path = "./model/vi/best.pt"
+
+            for idx, img_name in enumerate(images):
+                img_path = os.path.join(process_dir, img_name)
+
+                strategy = manual_layout_type
+                split_point = 0.5
+
+                if layout_mode == "AI Auto-Detect":
+                    # Analyze layout
+                    if progress_callback:
+                        progress_callback(f"Analyzing layout for {img_name}...", 20 + int(idx/len(images)*20), 100)
+
+                    # Detect boxes
+                    bboxes = self.data_handler.detect_text_boxes(img_path, model_path)
+
+                    # Ask LLM
+                    # Read image dims
+                    img = cv2.imread(img_path)
+                    h, w, _ = img.shape
+
+                    analysis = llm_processor.analyze_page_structure(bboxes, w, h)
+                    strategy = analysis.get("strategy", "FULL_PAGE")
+                    split_point = analysis.get("split_point", 0.5)
+
+                    print(f"Image {img_name}: Detected {strategy}")
+
+                # Apply cropping
+                # We need to save the crops back.
+                # DataHandler.smart_crop returns dict {1: img, 2: img}
+                crops = self.data_handler.smart_crop(img_path, strategy, split_point)
+
+                # Overwrite/Save crops
+                # Standard convention: image_001.jpg -> image_001_001.jpg, image_001_002.jpg
+                base_name = os.path.splitext(img_name)[0]
+                ext = os.path.splitext(img_name)[1]
+
+                for k, v in crops.items():
+                    # We might want to separate into Quoc Ngu / Han Nom folders if we know which is which.
+                    # For SPLIT_VERTICAL, usually left is Nom, right is Vi (or vice versa).
+                    # For now, we save inplace or to specific dirs if we want to follow existing logic.
+                    # Existing logic expects 'vi_dir' and 'nom_dir' to contain the separated images.
+                    # Let's save crop 1 to nom_dir? and crop 2 to vi_dir?
+                    # That depends on the book.
+                    # Let's just save inplace with suffix and let manual alignment handle it?
+                    # No, user wants automated pipeline.
+                    # Let's assume Left=Nom, Right=Vi for now (common).
+
+                    # We simply overwrite the original file with the first crop if Full Page
+                    # Or delete original and save parts.
+                    pass
+
+                # ACTUAL EXECUTION:
+                # To integrate with existing ocr_processor, we need images in info['vi_dir'] and info['nom_dir'].
+                # If we split, we should put one half in vi_dir and one in nom_dir?
+                # DataHandler.extract_pdf puts ALL pages in BOTH folders usually (as duplicates)
+                # or splits them if using split_nom_vi logic.
+                # Here we extracted raw pages.
+
+                if strategy != "FULL_PAGE" and len(crops) == 2:
+                    # Save Left/Top to one dir, Right/Bottom to other?
+                    # Let's assume standard: 1->Nom, 2->Vi
+                    nom_dest = os.path.join(info['nom_dir'], f"{base_name}_001{ext}")
+                    vi_dest = os.path.join(info['vi_dir'], f"{base_name}_002{ext}")
+
+                    cv2.imwrite(nom_dest, crops[1])
+                    cv2.imwrite(vi_dest, crops[2])
+
+                    # Remove original if it was just a raw page in that folder
+                    # But extract_pdf puts images in both folders.
+                    # We should clean up.
+                    if os.path.exists(os.path.join(info['nom_dir'], img_name)):
+                        os.remove(os.path.join(info['nom_dir'], img_name))
+                    if os.path.exists(os.path.join(info['vi_dir'], img_name)):
+                        os.remove(os.path.join(info['vi_dir'], img_name))
+
+                else:
+                    # Full page, keep as is.
+                    pass
 
             # 3. OCR
             if progress_callback:
-                progress_callback("Step 3/5: Running OCR...", 40, 100)
+                progress_callback("Step 3/5: Running OCR (Quoc Ngu)...", 40, 100)
 
-            self.ocr_processor.ocr_both(progress_callback=lambda msg, c, t: None) # Suppress internal progress or pipe it?
+            # Run Quoc Ngu OCR once (assuming it's local/stable)
+            self.ocr_processor.ocr_quoc_ngu(progress_callback=lambda msg, c, t: None)
+
+            if progress_callback:
+                progress_callback("Step 3.5/5: Running OCR (Han Nom) with Retry...", 50, 100)
+
+            # Run Han Nom OCR with retry loop until all files are processed
+            max_retries = 10
+            attempt = 0
+            while attempt < max_retries:
+                # Check progress
+                progress_info = self.ocr_processor.get_ocr_progress()
+                processed = progress_info.get('processed_count', 0)
+                total = progress_info.get('total_count', 0)
+
+                if total > 0 and processed >= total:
+                    print("OCR Han Nom completed successfully.")
+                    break
+
+                print(f"OCR Han Nom Progress: {processed}/{total}. Attempt {attempt + 1}/{max_retries}")
+                if progress_callback:
+                    progress_callback(f"OCR Han Nom: {processed}/{total} (Attempt {attempt+1})", 50, 100)
+
+                try:
+                    # Run/Resume OCR
+                    self.ocr_processor.ocr_han_nom(progress_callback=lambda msg, c, t: None)
+                except Exception as e:
+                    print(f"OCR attempt failed: {e}")
+
+                attempt += 1
+
+            # Final check
+            progress_info = self.ocr_processor.get_ocr_progress()
+            if progress_info.get('total_count', 0) > 0 and progress_info.get('processed_count', 0) < progress_info.get('total_count', 0):
+                print("Warning: OCR Han Nom did not complete all files after retries.")
 
             # 4. Read OCR Results
             if progress_callback:

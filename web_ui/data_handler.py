@@ -7,6 +7,7 @@ from typing import Dict, Any, Optional
 from tqdm import tqdm
 import cv2
 import re
+from ultralytics import YOLO
 
 # Add parent directory to path to import parent modules
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -257,3 +258,50 @@ class DataHandler:
             'vi': num_pages_vi,
             'nom': num_pages_nom
         }
+
+    def detect_text_boxes(self, image_path: str, model_path: str) -> list:
+        """
+        Detect text bounding boxes using YOLO model.
+        Returns list of [x1, y1, x2, y2].
+        """
+        try:
+            model = YOLO(model_path, verbose=False)
+            results = model(image_path, verbose=False)
+
+            bboxes = []
+            for result in results:
+                for box in result.boxes:
+                    x1, y1, x2, y2 = map(int, box.xyxy[0])
+                    bboxes.append([x1, y1, x2, y2])
+            return bboxes
+        except Exception as e:
+            print(f"Error detecting boxes: {e}")
+            return []
+
+    def smart_crop(self, image_path: str, strategy: str, split_point: float = 0.5) -> dict:
+        """
+        Crop image based on AI strategy.
+        """
+        image = cv2.imread(image_path)
+        if image is None:
+            return {}
+
+        height, width, _ = image.shape
+        cropped_images = {}
+
+        if strategy == "SPLIT_VERTICAL":
+            # Split into Left/Right
+            split_x = int(width * split_point)
+            cropped_images[1] = image[:, 0:split_x] # Left
+            cropped_images[2] = image[:, split_x:width] # Right
+
+        elif strategy == "SPLIT_HORIZONTAL":
+            # Split into Top/Bottom
+            split_y = int(height * split_point)
+            cropped_images[1] = image[0:split_y, :] # Top
+            cropped_images[2] = image[split_y:height, :] # Bottom
+
+        else: # FULL_PAGE or fallback
+            cropped_images[1] = image
+
+        return cropped_images

@@ -1392,11 +1392,18 @@ elif selected == "🚀 Auto Pipeline":
 
     # 3. Strategy
     st.markdown("### 📐 Chiến lược xử lý")
-    layout_type = st.selectbox(
-        "Bố cục trang PDF",
-        options=["Split Vertical", "Split Horizontal", "Full Page"],
-        help="Chọn cách chia trang nếu văn bản song ngữ được trình bày song song."
-    )
+
+    layout_mode = st.radio("Chế độ phân tích", ["AI Auto-Detect", "Manual Strategy"], horizontal=True)
+
+    manual_layout_type = "Full Page"
+    if layout_mode == "Manual Strategy":
+        manual_layout_type = st.selectbox(
+            "Bố cục trang PDF (Thủ công)",
+            options=["Split Vertical", "Split Horizontal", "Full Page"],
+            help="Chọn cách chia trang nếu văn bản song ngữ được trình bày song song."
+        )
+    else:
+        st.info("🤖 AI sẽ tự động phân tích từng trang để quyết định cách cắt ảnh và xử lý tối ưu nhất.")
 
     if st.button("🚀 Chạy Pipeline", type="primary"):
         if not pdf_file_pipe:
@@ -1424,8 +1431,9 @@ elif selected == "🚀 Auto Pipeline":
             try:
                 result_path = pipeline.run_pipeline(
                     temp_pdf,
-                    layout_type,
+                    layout_mode,
                     llm_proc,
+                    manual_layout_type=manual_layout_type,
                     progress_callback=pipe_callback
                 )
 
