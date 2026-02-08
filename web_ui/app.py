@@ -31,6 +31,7 @@ try:
     from web_ui.data_handler import DataHandler
     from web_ui.ocr_processor import OCRProcessor
     from web_ui.ai_analyst import AIAnalyst, LLMProcessor
+    from web_ui.auto_pipeline import AutoPipeline
 except ImportError as e:
     st.error(f"❌ Import Error: {e}")
     st.info("""
@@ -103,6 +104,10 @@ if DEMO_MODE:
             pass
 
     class LLMProcessor:
+        def __init__(self, *args, **kwargs):
+            pass
+
+    class AutoPipeline:
         def __init__(self, *args, **kwargs):
             pass
 
@@ -259,8 +264,8 @@ st.markdown("""
 
 selected = option_menu(
     menu_title=None,
-    options=["📥 Trích xuất PDF", "✂️ Cắt ảnh", "👁️ OCR", "🔗 Align", "✏️ Sửa lỗi", "🏷️ Convert Labels", "🤖 AI Analyst", "⚙️ Chi tiết", "📊 Quản lý"],
-    icons=["download", "scissors", "eye", "link", "pencil", "tags", "robot", "sliders", "gear"],
+    options=["📥 Trích xuất PDF", "✂️ Cắt ảnh", "👁️ OCR", "🔗 Align", "✏️ Sửa lỗi", "🚀 Auto Pipeline", "🏷️ Convert Labels", "🤖 AI Analyst", "⚙️ Chi tiết", "📊 Quản lý"],
+    icons=["download", "scissors", "eye", "link", "pencil", "rocket", "tags", "robot", "sliders", "gear"],
     orientation="horizontal",
     styles={
         "container": {
@@ -1364,6 +1369,78 @@ elif selected == "✏️ Sửa lỗi":
             
         except Exception as e:
             st.error(f"❌ Lỗi: {str(e)}")
+
+# =================== TAB: AUTO PIPELINE ===================
+elif selected == "🚀 Auto Pipeline":
+    st.markdown("<div class='tab-content'>", unsafe_allow_html=True)
+    ModernUIComponents.render_header("Auto Pipeline", "Tự động hóa toàn bộ quy trình với AI", "🚀")
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    st.info("💡 Pipeline tự động: PDF -> Cắt ảnh -> OCR -> AI Alignment -> Excel Dataset")
+
+    # 1. Config AI
+    with st.expander("⚙️ Cấu hình AI Model", expanded=True):
+        col1, col2 = st.columns(2)
+        with col1:
+            hf_token_pipe = st.text_input("Hugging Face Token", type="password", key="pipe_token")
+        with col2:
+            model_id_pipe = st.text_input("Model ID", value="meta-llama/Llama-2-7b-chat-hf", key="pipe_model")
+
+    # 2. Input PDF
+    st.markdown("### 📄 Đầu vào PDF")
+    pdf_file_pipe = st.file_uploader("Upload PDF song ngữ", type=['pdf'], key="pipe_pdf")
+
+    # 3. Strategy
+    st.markdown("### 📐 Chiến lược xử lý")
+    layout_type = st.selectbox(
+        "Bố cục trang PDF",
+        options=["Split Vertical", "Split Horizontal", "Full Page"],
+        help="Chọn cách chia trang nếu văn bản song ngữ được trình bày song song."
+    )
+
+    if st.button("🚀 Chạy Pipeline", type="primary"):
+        if not pdf_file_pipe:
+            st.error("Vui lòng upload file PDF!")
+        else:
+            # Save PDF temporarily
+            temp_pdf = os.path.join("temp", pdf_file_pipe.name)
+            os.makedirs("temp", exist_ok=True)
+            with open(temp_pdf, "wb") as f:
+                f.write(pdf_file_pipe.getbuffer())
+
+            # Init components
+            llm_proc = LLMProcessor(api_token=hf_token_pipe, model_id=model_id_pipe)
+            pipeline = AutoPipeline(config.output_folder, config.name_file_info)
+
+            # Progress UI
+            progress_bar = st.progress(0)
+            status_text = st.empty()
+
+            def pipe_callback(msg, curr, total):
+                if total > 0:
+                    progress_bar.progress(curr / total)
+                status_text.markdown(f"**Status:** {msg}")
+
+            try:
+                result_path = pipeline.run_pipeline(
+                    temp_pdf,
+                    layout_type,
+                    llm_proc,
+                    progress_callback=pipe_callback
+                )
+
+                st.success("✅ Pipeline hoàn thành xuất sắc!")
+                st.markdown(f"### 📥 Kết quả: `{result_path}`")
+
+                # Preview Result
+                if os.path.exists(result_path):
+                    df_res = pd.read_excel(result_path)
+                    st.dataframe(df_res.head(10))
+
+            except Exception as e:
+                st.error(f"❌ Lỗi Pipeline: {e}")
+                import traceback
+                st.error(traceback.format_exc())
 
 
 # =================== TAB 6: CONVERT LABELS ===================

@@ -63,6 +63,79 @@ class LLMProcessor:
 
         return cleaned_texts
 
+    def align_bilingual_data(self, nom_list: List[str], vi_list: List[str]) -> List[Dict[str, str]]:
+        """
+        Smartly align Sino-Vietnamese (Nom) and Vietnamese (Quoc Ngu) lists.
+        Handles mismatches in length and alignment errors.
+        """
+        # Simple heuristic alignment if no API token
+        if not self.api_token:
+            min_len = min(len(nom_list), len(vi_list))
+            aligned_data = []
+            for i in range(min_len):
+                aligned_data.append({
+                    "Han_Nom": nom_list[i],
+                    "Quoc_Ngu": vi_list[i],
+                    "Confidence": "Mock (Heuristic)"
+                })
+            return aligned_data
+
+        # LLM-based alignment logic
+        # We process in chunks to fit context window
+        aligned_data = []
+        chunk_size = 5
+
+        # Prepare data structure for the prompt
+        nom_chunks = [nom_list[i:i + chunk_size] for i in range(0, len(nom_list), chunk_size)]
+        vi_chunks = [vi_list[i:i + chunk_size] for i in range(0, len(vi_list), chunk_size)]
+
+        # Determine how many chunks we can reasonably process (using min length)
+        # Note: This is a simplified logic. A real robust pipeline would handle sliding windows.
+        min_chunks = min(len(nom_chunks), len(vi_chunks))
+
+        for i in range(min_chunks):
+            n_chunk = nom_chunks[i]
+            v_chunk = vi_chunks[i]
+
+            prompt = f"""
+            Task: Align the following two lists of sentences. List A is Sino-Vietnamese (Han-Nom), List B is Vietnamese (Quoc Ngu).
+            Match them sentence by sentence based on meaning and phonetics.
+
+            List A (Han-Nom):
+            {json.dumps(n_chunk, ensure_ascii=False)}
+
+            List B (Quoc Ngu):
+            {json.dumps(v_chunk, ensure_ascii=False)}
+
+            Output strictly a JSON list of objects with keys: "Han_Nom", "Quoc_Ngu".
+            """
+
+            result = self.query_hf_api({"inputs": prompt})
+
+            try:
+                if isinstance(result, list) and "generated_text" in result[0]:
+                    generated = result[0]["generated_text"].replace(prompt, "").strip()
+                    # Find JSON in the output
+                    start = generated.find('[')
+                    end = generated.rfind(']') + 1
+                    if start != -1 and end != -1:
+                        parsed = json.loads(generated[start:end])
+                        aligned_data.extend(parsed)
+                    else:
+                        # Fallback if JSON parsing fails
+                        for n, v in zip(n_chunk, v_chunk):
+                            aligned_data.append({"Han_Nom": n, "Quoc_Ngu": v, "Confidence": "Low (Parse Error)"})
+                else:
+                    # Fallback API failure
+                    for n, v in zip(n_chunk, v_chunk):
+                        aligned_data.append({"Han_Nom": n, "Quoc_Ngu": v, "Confidence": "Low (API Error)"})
+            except Exception as e:
+                print(f"Alignment error: {e}")
+                for n, v in zip(n_chunk, v_chunk):
+                    aligned_data.append({"Han_Nom": n, "Quoc_Ngu": v, "Confidence": "Low (Exception)"})
+
+        return aligned_data
+
 class AIAnalyst:
     """
     Analyzes data quality and manages the AI cleaning pipeline.
