@@ -88,7 +88,8 @@ class OCR:
             "file_name": req.file_name,
             "ocr_id": str(body_ocr_id),
             "lang_type": str(body_lang_type),
-            "epitaph": str(body_epitaph)
+            "epitaph": str(body_epitaph),
+            "tag": "det_epitaph_experimental"
         }
 
         try:

@@ -24,7 +24,7 @@ except (ImportError, Exception) as e:
     pass
 
 try:
-    from nom_ocr.nom_ocr import nom_ocr as nom_ocr_func, count_processed_images, get_next_unprocessed_file
+    from nom_ocr.nom_ocr import nom_ocr as nom_ocr_func, count_processed_images
     nom_ocr = nom_ocr_func
 except (ImportError, Exception) as e:
     pass
@@ -88,7 +88,9 @@ class OCRProcessor:
                 progress_callback("Đang OCR Quốc Ngữ...", 0, 100)
             
             # Lưu thông tin path OCR Quốc Ngữ
-            info['ocr_txt_qn'] = f"{self.output_folder}/ocr/Quoc_Ngu_ocr"
+            # Ưu tiên path user đã cấu hình trong before_handle_data.json
+            if not info.get('ocr_txt_qn'):
+                info['ocr_txt_qn'] = f"{self.output_folder}/ocr/Quoc_Ngu_ocr"
             os.makedirs(info['ocr_txt_qn'], exist_ok=True)
             
             # Chạy OCR
@@ -131,8 +133,15 @@ class OCRProcessor:
                 progress_callback("Đang OCR Hán Nôm...", 0, 100)
             
             # Lưu thông tin path OCR Hán Nôm
-            info['ocr_json_nom'] = f"{self.output_folder}/ocr/Han_Nom_ocr"
-            info['ocr_image_nom'] = f"{self.output_folder}/ocr/image_bbox"
+            # Ưu tiên path user đã cấu hình trong before_handle_data.json
+            if not info.get('ocr_json_nom'):
+                info['ocr_json_nom'] = f"{self.output_folder}/ocr/Han_Nom_ocr"
+
+            if info.get('ocr_image_nom'):
+                info['ocr_image_nom'] = info['ocr_image_nom']
+            else:
+                # Nếu user custom ocr_json_nom thì mặc định image_bbox cùng cấp với json folder
+                info['ocr_image_nom'] = os.path.join(os.path.dirname(info['ocr_json_nom']), 'image_bbox')
             os.makedirs(info['ocr_json_nom'], exist_ok=True)
             os.makedirs(info['ocr_image_nom'], exist_ok=True)
             
@@ -445,6 +454,8 @@ class OCRProcessor:
             - total_count: Tổng số ảnh trong folder nom_dir
             - progress_percent: Phần trăm hoàn thành (0-100)
             - unprocessed_file: File ảnh đầu tiên chưa OCR (nếu có)
+            - unprocessed_files: Danh sách file ảnh chưa OCR
+            - unprocessed_count: Số file ảnh chưa OCR
         """
         try:
             info = self.read_file_info()
@@ -457,6 +468,8 @@ class OCRProcessor:
                     'total_count': 0,
                     'progress_percent': 0,
                     'unprocessed_file': None,
+                    'unprocessed_files': [],
+                    'unprocessed_count': 0,
                     'status': 'error: nom_dir not found'
                 }
             
@@ -464,21 +477,39 @@ class OCRProcessor:
             processed_count = count_processed_images(ocr_json_nom) if ocr_json_nom else 0
             
             # Đếm tổng file ảnh
-            total_count = len([f for f in os.listdir(nom_dir) if os.path.isfile(os.path.join(nom_dir, f))])
+            image_files = sorted([
+                f for f in os.listdir(nom_dir)
+                if os.path.isfile(os.path.join(nom_dir, f))
+            ])
+            total_count = len(image_files)
             
             # Tính phần trăm
             progress_percent = int((processed_count / total_count * 100)) if total_count > 0 else 0
             
-            # Lấy file chưa OCR
-            unprocessed_file = None
+            # Lấy danh sách file chưa OCR
+            unprocessed_files = []
             if ocr_json_nom and os.path.exists(ocr_json_nom):
-                unprocessed_file, _ = get_next_unprocessed_file(nom_dir, ocr_json_nom)
+                processed_json = {
+                    os.path.splitext(f)[0]
+                    for f in os.listdir(ocr_json_nom)
+                    if f.endswith('.json')
+                }
+                for image_file in image_files:
+                    image_stem = os.path.splitext(image_file)[0]
+                    if image_stem not in processed_json:
+                        unprocessed_files.append(image_file)
+            else:
+                unprocessed_files = image_files.copy()
+
+            unprocessed_file = unprocessed_files[0] if unprocessed_files else None
             
             return {
                 'processed_count': processed_count,
                 'total_count': total_count,
                 'progress_percent': progress_percent,
                 'unprocessed_file': unprocessed_file,
+                'unprocessed_files': unprocessed_files,
+                'unprocessed_count': len(unprocessed_files),
                 'status': 'success'
             }
         except Exception as e:
@@ -487,6 +518,8 @@ class OCRProcessor:
                 'total_count': 0,
                 'progress_percent': 0,
                 'unprocessed_file': None,
+                'unprocessed_files': [],
+                'unprocessed_count': 0,
                 'status': f'error: {str(e)}'
             }
     

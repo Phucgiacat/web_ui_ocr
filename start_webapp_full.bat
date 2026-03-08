@@ -4,14 +4,10 @@ setlocal
 REM Run from repo root
 cd /d "%~dp0"
 
-REM Create .env if missing
+REM Require .env (do not use .env.example)
 if not exist ".env" (
-  if exist ".env.example" (
-    copy /Y ".env.example" ".env" >nul
-    echo Created .env from .env.example
-  ) else (
-    echo WARNING: .env.example not found. Please create .env manually.
-  )
+  echo ERROR: .env not found. Please create .env manually before running.
+  exit /b 1
 )
 
 REM Setup dependencies and folders

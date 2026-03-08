@@ -1,8 +1,10 @@
 {
-    "file_name": "RCM_001_000",
-    "vi_dir": "D:\\learning\\C.VAnh\\Data\\VBTL/image/Quoc Ngu",
-    "nom_dir": "D:\\learning\\C.VAnh\\Data\\VBTL/image/Han Nom",
-    "vi_dir_processed": "D:\\learning\\C.VAnh\\Data\\VBTL/image/Quoc Ngu",
-    "nom_dir_processed": "D:\\learning\\C.VAnh\\Data\\VBTL/image/Han Nom",
-    "ocr_txt_qn": "D:\\learning\\C.VAnh\\Data\\VBTL/ocr/Quoc_Ngu_ocr"
+    "file_name": "A2356",
+    "vi_dir": "D:\\learning\\C.VAnh\\Data\\A2356\\image\\Quoc Ngu",
+    "nom_dir": "D:\\learning\\C.VAnh\\Data\\VBTM\\image\\VBTM",
+    "ocr_json_nom": "D:\\learning\\C.VAnh\\Data\\VBTM/ocr/Han_Nom_ocr",
+    "ocr_image_nom": "D:\\learning\\C.VAnh\\Data\\VBTM/ocr\\image_bbox",
+    "ocr_id": 3,
+    "lang_type": 1,
+    "epitaph": 0
 }

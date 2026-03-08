@@ -351,37 +351,30 @@ if selected == "📥 Trích xuất PDF":
             if st.button("▶️ Bắt đầu trích xuất", use_container_width=True, key="start_extract"):
                 progress_bar = st.progress(0)
                 status_text = st.empty()
+                temp_path = None
                 
                 def progress_callback(message, current, total):
                     progress_bar.progress(current / (total or 1))
                     status_text.write(f"📝 {message}")
                 
                 try:
+                    os.makedirs("temp", exist_ok=True)
+                    temp_path = os.path.join("temp", uploaded_file.name)
+                    with open(temp_path, "wb") as f:
+                        f.write(uploaded_file.getbuffer())
+
                     handler = DataHandler(config.output_folder, config.name_file_info)
                     info = handler.extract_pdf(temp_path, progress_callback=progress_callback)
                     
                     st.success("✅ Trích xuất PDF thành công!")
                     st.json(info)
                     
-                    # Cleanup temp file with retry logic for locked files
-                    if 'temp_path' in locals() and temp_path:
-                        import time
-                        for attempt in range(3):
-                            try:
-                                if os.path.exists(temp_path):
-                                    os.remove(temp_path)
-                                break
-                            except PermissionError:
-                                if attempt < 2:
-                                    time.sleep(1)  # Wait before retry
-                                # Silently fail on final attempt
-                    
                     st.session_state.current_status = config.get_status()
                     
                 except Exception as e:
                     st.error(f"❌ Lỗi trích xuất: {str(e)}")
-                    # Cleanup on error with same retry logic
-                    if 'temp_path' in locals() and temp_path:
+                finally:
+                    if temp_path:
                         import time
                         for attempt in range(3):
                             try:
@@ -485,6 +478,18 @@ elif selected == "👁️ OCR":
     
     ModernUIComponents.render_info_box("💡 Bạn có thể chạy OCR từ các thư mục ảnh tùy chỉnh (không cần phải cắt ảnh trước)", "info")
     st.markdown("</div>", unsafe_allow_html=True)
+
+    def warn_if_no_images(dir_path: str, label: str):
+        if not dir_path or not os.path.isdir(dir_path):
+            return
+        files = [f.lower() for f in os.listdir(dir_path)]
+        has_images = any(f.endswith((".jpg", ".jpeg", ".png", ".tif", ".tiff", ".bmp")) for f in files)
+        has_txt = any(f.endswith(".txt") for f in files)
+        if not has_images:
+            if has_txt:
+                st.warning(f"⚠️ {label} đang trỏ tới thư mục chỉ có .txt, không có ảnh. Vui lòng chọn thư mục ảnh (.jpg/.png).")
+            else:
+                st.warning(f"⚠️ {label} không thấy ảnh trong thư mục. Vui lòng kiểm tra đường dẫn.")
     
     # Input directories with improved layout
     st.markdown("### 📁 Cấu hình thư mục")
@@ -502,6 +507,7 @@ elif selected == "👁️ OCR":
             config.vi_dir = vi_dir_ocr
             config.save_paths_to_info()
             st.success("✅ Đã lưu path Quốc Ngữ vào before_handle_data.json")
+        warn_if_no_images(vi_dir_ocr, "Thư mục ảnh Quốc Ngữ")
     
     with col2:
         nom_dir_ocr = st.text_input(
@@ -516,6 +522,7 @@ elif selected == "👁️ OCR":
             config.nom_dir = nom_dir_ocr
             config.save_paths_to_info()
             st.success("✅ Đã lưu path Hán Nôm vào before_handle_data.json")
+        warn_if_no_images(nom_dir_ocr, "Thư mục ảnh Hán Nôm")
     
     st.markdown("---")
     
@@ -987,6 +994,31 @@ elif selected == "👁️ OCR":
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
+
+                unprocessed_files = progress_info.get('unprocessed_files', [])
+                unprocessed_count = progress_info.get('unprocessed_count', len(unprocessed_files))
+
+                if unprocessed_count > 0:
+                    st.markdown(f"""
+                    <div style='background: rgba(251, 188, 4, 0.08);
+                                border: 1px solid rgba(251, 188, 4, 0.35);
+                                border-radius: 10px;
+                                padding: 14px 16px;
+                                margin: 8px 0 12px 0;'>
+                        <div style='font-weight: 600; color: #5f6368;'>📌 Ảnh chưa OCR: {unprocessed_count} file</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+                    with st.expander("Xem danh sách tên file chưa OCR", expanded=True):
+                        st.text_area(
+                            "Danh sách file",
+                            value="\n".join(unprocessed_files),
+                            height=260,
+                            disabled=True,
+                            label_visibility="collapsed"
+                        )
+                else:
+                    st.success("✅ Không còn file ảnh nào chưa OCR.")
             else:
                 st.warning(f"⚠️ {progress_info['status']}")
         except Exception as e:
@@ -1382,9 +1414,22 @@ elif selected == "🚀 Auto Pipeline":
     with st.expander("⚙️ Cấu hình AI Model", expanded=True):
         col1, col2 = st.columns(2)
         with col1:
-            hf_token_pipe = st.text_input("Hugging Face Token", type="password", key="pipe_token")
+            hf_token_pipe = st.text_input(
+                "Hugging Face Token",
+                type="password",
+                value=os.getenv("HF_API_TOKEN", ""),
+                key="pipe_token"
+            )
         with col2:
-            model_id_pipe = st.text_input("Model ID", value="meta-llama/Llama-2-7b-chat-hf", key="pipe_model")
+            model_id_pipe = st.text_input(
+                "Model ID",
+                value=os.getenv("HF_MODEL_ID", "meta-llama/Llama-2-7b-chat-hf"),
+                key="pipe_model"
+            )
+        if hf_token_pipe:
+            st.caption("✅ LLM: Đang dùng Hugging Face Inference API")
+        else:
+            st.caption("⚠️ LLM: Chưa có token, sẽ dùng chế độ Mock/Heuristic")
 
     # 2. Input PDF
     st.markdown("### 📄 Đầu vào PDF")
@@ -1416,7 +1461,7 @@ elif selected == "🚀 Auto Pipeline":
                 f.write(pdf_file_pipe.getbuffer())
 
             # Init components
-            llm_proc = LLMProcessor(api_token=hf_token_pipe, model_id=model_id_pipe)
+            llm_proc = LLMProcessor(api_token=hf_token_pipe or None, model_id=model_id_pipe)
             pipeline = AutoPipeline(config.output_folder, config.name_file_info)
 
             # Progress UI
@@ -1693,12 +1738,25 @@ elif selected == "🤖 AI Analyst":
     with st.expander("⚙️ Cấu hình LLM (Hugging Face)", expanded=False):
         col1, col2 = st.columns(2)
         with col1:
-            hf_token = st.text_input("Hugging Face API Token", type="password", help="Nhập token của bạn để sử dụng model thật. Để trống để dùng chế độ Demo (Mock).")
+            hf_token = st.text_input(
+                "Hugging Face API Token",
+                type="password",
+                value=os.getenv("HF_API_TOKEN", ""),
+                help="Nhập token của bạn để sử dụng model thật. Để trống để dùng chế độ Demo (Mock)."
+            )
         with col2:
-            model_id = st.text_input("Model ID", value="meta-llama/Llama-2-7b-chat-hf", help="Ví dụ: 'meta-llama/Llama-2-7b-chat-hf' hoặc 'Qwen/Qwen-7B'")
+            model_id = st.text_input(
+                "Model ID",
+                value=os.getenv("HF_MODEL_ID", "meta-llama/Llama-2-7b-chat-hf"),
+                help="Ví dụ: 'meta-llama/Llama-2-7b-chat-hf' hoặc 'Qwen/Qwen-7B'"
+            )
+        if hf_token:
+            st.caption("✅ LLM: Đang dùng Hugging Face Inference API")
+        else:
+            st.caption("⚠️ LLM: Chưa có token, sẽ dùng chế độ Mock/Heuristic")
 
     # Initialize classes
-    llm_processor = LLMProcessor(api_token=hf_token if hf_token else None, model_id=model_id)
+    llm_processor = LLMProcessor(api_token=hf_token or None, model_id=model_id)
 
     # File Selection
     st.markdown("### 📂 Chọn dữ liệu đầu vào")

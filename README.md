@@ -270,6 +270,7 @@ ADAPTIVE_DELAY_MULTIPLIER=1.0        # Hệ số điều chỉnh ban đầu
 
 ### Tài Liệu Chi Tiết
 
+- **Cấu hình path + before_handle_data.json (chi tiết):** [HUONG_DAN_CHI_TIET_PATH_VA_BEFORE_HANDLE_DATA.md](HUONG_DAN_CHI_TIET_PATH_VA_BEFORE_HANDLE_DATA.md)
 - **Quick Start (2 min):** [START_OCR_PROGRESS_TRACKING.md](START_OCR_PROGRESS_TRACKING.md)
 - **Hướng dẫn đầy đủ (15 min):** [OCR_PROGRESS_TRACKING_GUIDE.md](OCR_PROGRESS_TRACKING_GUIDE.md)
 - **Code examples:** [CODE_EXAMPLES.md](CODE_EXAMPLES.md)
